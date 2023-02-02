@@ -363,10 +363,12 @@ Shader "Figma/FigmaImageShader"
                     clip (color.a - 0.001);
                 #endif
 
-
-
-                //color=_FillColor;
-                return color;
+                #if UNITY_COLORSPACE_GAMMA
+                     return color;
+                #else
+                    return float4(GammaToLinearSpace( color.rgb),color.a);
+                #endif
+                
             }
 
         

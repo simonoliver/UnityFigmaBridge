@@ -318,7 +318,11 @@ uniform float		_Sharpness;
 			clip(c.a - 0.001);
 			#endif
 
-			return c;
+			#if UNITY_COLORSPACE_GAMMA
+				return c;
+			#else
+				return float4(GammaToLinearSpace( c.rgb),c.a);
+			#endif
 		}
 		ENDCG
 	}
