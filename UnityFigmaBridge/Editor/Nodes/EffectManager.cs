@@ -1,8 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityFigmaBridge.Editor.FigmaApi;
-using UnityFigmaBridge.Editor.Utils;
-using Color = UnityFigmaBridge.Editor.FigmaApi.Color;
 
 namespace UnityFigmaBridge.Editor.Nodes
 {

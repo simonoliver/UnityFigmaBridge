@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityFigmaBridge.Editor.FigmaApi;
 using UnityFigmaBridge.Editor.Fonts;
 using UnityFigmaBridge.Editor.Settings;
-using UnityFigmaBridge.Editor.Utils;
 using UnityFigmaBridge.Runtime.UI;
 
 namespace UnityFigmaBridge.Editor

@@ -1,8 +1,5 @@
-﻿using UnityEditor;
-using UnityEngine;
-using UnityEngine.Serialization;
+﻿using UnityEngine;
 using UnityFigmaBridge.Editor.FigmaApi;
-using UnityFigmaBridge.Editor.Utils;
 
 namespace UnityFigmaBridge.Editor.Settings
 {

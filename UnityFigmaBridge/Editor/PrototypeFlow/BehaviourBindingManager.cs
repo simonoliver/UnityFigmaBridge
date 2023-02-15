@@ -7,9 +7,7 @@ using UnityEditor.Events;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using UnityFigmaBridge.Editor.Utils;
 using UnityFigmaBridge.Runtime.UI;
-using Component = UnityEngine.Component;
 
 namespace UnityFigmaBridge.Editor.PrototypeFlow
 {
