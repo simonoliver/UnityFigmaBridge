@@ -109,7 +109,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             var anchorsX = constraint.horizontal switch
             {
                 LayoutConstraint.HorizontalLayoutConstraint.LEFT => new Vector2(0, 0),
-                LayoutConstraint.HorizontalLayoutConstraint.RIGHT => new Vector2(0, 0),
+                LayoutConstraint.HorizontalLayoutConstraint.RIGHT => new Vector2(1, 1),
                 LayoutConstraint.HorizontalLayoutConstraint.CENTER => new Vector2(0.5f, 0.5f),
                 LayoutConstraint.HorizontalLayoutConstraint.LEFT_RIGHT => new Vector2(0, 1),
                 LayoutConstraint.HorizontalLayoutConstraint.SCALE => new Vector2(0, 1),
