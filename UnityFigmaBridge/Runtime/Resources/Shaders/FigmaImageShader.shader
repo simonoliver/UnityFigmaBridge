@@ -121,7 +121,7 @@ Shader "Figma/FigmaImageShader"
             // Min/Max angle range and inner radius (if enabled)
             float4 _ArcAngleRangeInnerRadius;
             // Handle positions for gradient (points)
-            float4 _GradientHandlePositions;
+            float _GradientHandlePositions[6];
             
             // End Figma properties
 
@@ -273,42 +273,75 @@ Shader "Figma/FigmaImageShader"
 
                 // By default use fill*vertex colour as passed through
                 half4 shapeColor=_FillColor;
+
+                 const float half_pi = 1.57079632679;
                 
                 // If gradient, replace fill color
                 #if LINEAR_GRADIENT
                     // TODO - Optimise
                     // Get distance vector for handle positions (used for both angle and length)
-                    float2 gradientDistanceVec=_GradientHandlePositions.zw-_GradientHandlePositions.xy;
-                    // Calculate center pos (required for transformation)
-                    float gradientCenterPos=_GradientHandlePositions.xy+gradientDistanceVec*0.5f;
+                    // Unity sets top as 1, bottom as 0 (inverse of Figma) so need to reverse
+                    float2 gradient_p0=float2(_GradientHandlePositions[0],1.0f-_GradientHandlePositions[1]);
+                    float2 gradient_p1=float2(_GradientHandlePositions[2],1.0f-_GradientHandlePositions[3]);
+                    float2 gradient_p2=float2(_GradientHandlePositions[4],1.0f-_GradientHandlePositions[5]);
+                    float2 gradientDistanceDirection=gradient_p1-gradient_p0;
+                    float2 gradientDistanceNormal=gradient_p2-gradient_p0;
+                
                     // Calc gradient angle for inverse  (transform UV pos into gradient space)
-                    float gradientAngle=-atan2(gradientDistanceVec.y,gradientDistanceVec.x);
+                    float gradientAngle=half_pi-atan2(-gradientDistanceNormal.y,gradientDistanceNormal.x);
                     float c=cos(gradientAngle);
                     float s=sin(gradientAngle);
                     // Build rotation matrix
                     float2x2 rotationMatrix = float2x2( c, -s, s, c);
                     // Offset point to relative to center
-                    float2 relativeToCenterPos=IN.normalised_position-gradientCenterPos;
+                    float2 relativeToCenterPos=IN.normalised_position-gradient_p0;
                     // Transform point to find pos in gradient space
                     float2 rotatedNormalisedPosition = mul ( relativeToCenterPos, rotationMatrix);
                     // Divide by gradientDistanceLength to adjust scale of gradient length
-                    rotatedNormalisedPosition/=length(gradientDistanceVec);
                     // Shift to range 0..1
-                    float gradientPosition=rotatedNormalisedPosition.x+0.5f;
+                    float gradientPosition=saturate(rotatedNormalisedPosition.x/length(gradientDistanceDirection));
                 
-                    //float gradientPosition=IN.normalised_position.x;
                     float4 gradientColor=GetGradientColor(gradientPosition);
                     shapeColor.rgb*=gradientColor.rgb;
                     shapeColor.a*=gradientColor.a;
                 #endif
                 
                 #if RADIAL_GRADIENT
-                    float normalisedLengthFromCenter=length(IN.normalised_position-float2(0.5f,0.5f));
-                    normalisedLengthFromCenter*=2;
-                    float gradientPosition=saturate(normalisedLengthFromCenter);    // Clamp 0-1
+
+                   
+                    // Unity sets top as 1, bottom as 0 (inverse of Figma) so need to reverse Y
+                    float2 gradient_p0=float2(_GradientHandlePositions[0],1.0f-_GradientHandlePositions[1]);
+                    float2 gradient_p1=float2(_GradientHandlePositions[2],1.0f-_GradientHandlePositions[3]);
+                    float2 gradient_p2=float2(_GradientHandlePositions[4],1.0f-_GradientHandlePositions[5]);
+
+                    float2 relativeToCenterPos=IN.normalised_position-gradient_p0;
+                    
+                    // Calculate distance vectors in both directions. These will not necessarily be perpendicular in
+                    // normalised space
+                    float2 gradientDistanceVec1=gradient_p1-gradient_p0;
+                    float2 gradientDistanceVec2=gradient_p2-gradient_p0;
+
+                    // Calculate distance along gradient direction from gradient center in both directions
+                    float gradientAngle1=half_pi-atan2(-gradientDistanceVec1.y,gradientDistanceVec1.x);
+                    float c1=cos(gradientAngle1);
+                    float s1=sin(gradientAngle1);
+                    float2x2 rotationMatrix1 = float2x2( c1, -s1, s1, c1);
+                    float2 rotatedNormalisedPosition1 = mul ( relativeToCenterPos, rotationMatrix1);
+                    float distanceToGradientPos2=rotatedNormalisedPosition1.x/length(gradientDistanceVec2);
+
+                    float gradientAngle2=half_pi-atan2(-gradientDistanceVec2.y,gradientDistanceVec2.x);
+                    float c2=cos(gradientAngle2);
+                    float s2=sin(gradientAngle2);
+                    float2x2 rotationMatrix2 = float2x2( c2, -s2, s2, c2);
+                    float2 rotatedNormalisedPosition2 = mul ( relativeToCenterPos, rotationMatrix2);
+                    float distanceToGradientPos1=rotatedNormalisedPosition2.x/length(gradientDistanceVec1);
+
+                    // Calculate overall distance based upon these two values
+                    float gradientPosition=saturate(length(float2(abs(distanceToGradientPos1),abs(distanceToGradientPos2))));
                     float4 gradientColor=GetGradientColor(gradientPosition);
                     shapeColor.rgb*=gradientColor.rgb;
                     shapeColor.a*=gradientColor.a;
+                
                 #endif
                 
                 half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd)*shapeColor;

@@ -225,9 +225,12 @@ namespace UnityFigmaBridge.Editor.Nodes
                         var gradientHandlePositions = firstFill.gradientHandlePositions;
                         if (gradientHandlePositions.Length == 3)
                         {
-                            var pos0 = FigmaDataUtils.ToUnityVector(gradientHandlePositions[0]);
-                            var pos1 = FigmaDataUtils.ToUnityVector(gradientHandlePositions[1]);
-                            figmaImage.GradientHandlePositions = new Vector4(pos0.x, pos0.y, pos1.x, pos1.y);
+                            figmaImage.GradientHandlePositions = new[]
+                            {
+                                FigmaDataUtils.ToUnityVector(gradientHandlePositions[0]),
+                                FigmaDataUtils.ToUnityVector(gradientHandlePositions[1]),
+                                FigmaDataUtils.ToUnityVector(gradientHandlePositions[2])
+                            };
                         }
 
                         break;

@@ -74,7 +74,7 @@ namespace UnityFigmaBridge.Runtime.UI
         [SerializeField] protected Gradient m_FillGradient;
         // The two normalised positions that affect the gradient position and rotation- https://www.figma.com/widget-docs/api/type-GradientPaint/
         // Default to linear horizontal
-        [SerializeField] protected Vector4 m_GradientHandlePositions=new Vector4(0,0,1,0);
+        [SerializeField] protected Vector2[] m_GradientHandlePositions={new(0,0),new(1,0),new(1,0)};
         
         private static readonly int s_StrokeColorPropertyID = Shader.PropertyToID("_StrokeColor");
         private static readonly int s_FillColorPropertyID = Shader.PropertyToID("_FillColor");
@@ -206,7 +206,7 @@ namespace UnityFigmaBridge.Runtime.UI
             }
         }
         
-        public Vector4 GradientHandlePositions
+        public Vector2[] GradientHandlePositions
         {
             get => m_GradientHandlePositions;
             set
@@ -328,7 +328,7 @@ namespace UnityFigmaBridge.Runtime.UI
             // Largely this is the the same as Graphic original, but with extra UV Channels settings
             Color32 color32 = color;
             vh.Clear();
-            // Order is TL, BL, TR, BR
+            // Order is TL, BL, BR, TR
             vh.AddVert(new Vector3(v.x, v.y), color32, texCoords[0],new Vector4(0f, 0,rtSize.x,rtSize.y), Vector3.zero, Vector4.zero);
             vh.AddVert(new Vector3(v.x, v.w), color32,texCoords[1], new Vector4(0f, 1f, rtSize.x,rtSize.y), Vector3.zero, Vector4.zero);
             vh.AddVert(new Vector3(v.z, v.w), color32, texCoords[2],new Vector4(1f, 1f,rtSize.x,rtSize.y), Vector3.zero, Vector4.zero);
@@ -415,7 +415,19 @@ namespace UnityFigmaBridge.Runtime.UI
             mat.SetColorArray(s_GradientColorsPropertyID,gradientColors);
             mat.SetFloatArray(s_GradientStopsPropertyID,gradientStops);
             mat.SetFloat(s_GradientNumStopsPropertyID,gradientStopCount);
-            mat.SetVector(s_GradientHandlePositionsPropertyID,m_GradientHandlePositions);
+            mat.SetFloatArray(s_GradientHandlePositionsPropertyID,GetFloatArray(m_GradientHandlePositions));
+        }
+
+        private static float[] GetFloatArray(Vector2[] input)
+        {
+            var length = input.Length;
+            var output = new float[length * 2];
+            for (var i = 0; i < length; i++)
+            {
+                output[i * 2] = input[i].x;
+                output[i * 2+1] = input[i].y;
+            }
+            return output;
         }
         
         /// <summary>

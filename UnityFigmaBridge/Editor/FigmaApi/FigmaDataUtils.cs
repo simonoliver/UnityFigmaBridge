@@ -267,12 +267,12 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Defines whether a given figma node should be substituted with server-side render
         /// </summary>
         /// <param name="node"></param>
-        /// <param name="resursiveNodeDepth"></param>
+        /// <param name="recursiveNodeDepth"></param>
         /// <returns></returns>
-        private static bool GetNodeSubstitutionStatus(Node node,int resursiveNodeDepth)
+        private static bool GetNodeSubstitutionStatus(Node node,int recursiveNodeDepth)
         {
             // We never substitute screens or pages
-            if (resursiveNodeDepth <=1) return false;
+            if (recursiveNodeDepth <=1) return false;
             
             // If a given node has the word "render", mark for rendering
             if (node.name.ToLower().Contains("render")) return true;
