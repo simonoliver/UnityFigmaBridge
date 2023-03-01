@@ -271,8 +271,8 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <returns></returns>
         private static bool GetNodeSubstitutionStatus(Node node,int resursiveNodeDepth)
         {
-            // We never substitute screens
-            if (resursiveNodeDepth == 0) return false;
+            // We never substitute screens or pages
+            if (resursiveNodeDepth <=1) return false;
             
             // If a given node has the word "render", mark for rendering
             if (node.name.ToLower().Contains("render")) return true;
@@ -280,8 +280,14 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             // Right now Vector type is the only one we always render server-side. This may change if we support native vector rendering
             if (node.type == NodeType.VECTOR) return true;
             
-            // If ALL children are of type vector (eg broken up SVGs) then return true. This prevents multiple bitmaps being rendered
-            if (GetNodeChildrenExclusivelyOfType(node, NodeType.VECTOR)) return true;
+            // The pattern we identify for server side vector rendering is:
+            // * At least one sub nodes of type vector
+            // * Only containing sub nodes of type VECTOR, FRAME, GROUP
+            var validNodeTypesForVectorRender = new NodeType[] { NodeType.VECTOR, NodeType.GROUP, NodeType.FRAME };
+            var nodeTypeCount = new int[validNodeTypesForVectorRender.Length];
+            var onlyValidNodeTypesFound =
+                GetNodeChildrenExclusivelyOfTypes(node, validNodeTypesForVectorRender, nodeTypeCount);
+            if (onlyValidNodeTypesFound && nodeTypeCount[0]>0) return true;
             
             return false;
         }
@@ -290,18 +296,27 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Tests whether a given node only has children of a specific type
         /// </summary>
         /// <param name="node"></param>
-        /// <param name="nodeType"></param>
+        /// <param name="nodeTypes"></param>
+        /// <param name="nodeTypeCount"></param>
         /// <returns></returns>
-        private static bool GetNodeChildrenExclusivelyOfType(Node node, NodeType nodeType)
+        private static bool GetNodeChildrenExclusivelyOfTypes(Node node, NodeType[] nodeTypes,int[] nodeTypeCount)
         {
-            if (node.children == null) return false;
-            var matchingNodeFound = false;
+            // If this doesnt match return false
+            if (!nodeTypes.Contains(node.type)) return false;
+            
+            // Increment count for matching node type for this node
+            for (var i = 0; i < nodeTypes.Length; i++)
+            {
+                if (node.type == nodeTypes[i]) nodeTypeCount[i]++;
+            }
+
+            if (node.children == null) return true;
             foreach (var childNode in node.children)
             {
-                if (childNode.type == nodeType) matchingNodeFound = true;
-                else return false;
+                var isMatching = GetNodeChildrenExclusivelyOfTypes(childNode, nodeTypes, nodeTypeCount);
+                if (!isMatching) return false;
             }
-            return matchingNodeFound;
+            return true;
         }
 
         /// <summary>

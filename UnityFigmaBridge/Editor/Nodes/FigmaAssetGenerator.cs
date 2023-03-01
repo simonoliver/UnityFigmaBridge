@@ -110,8 +110,12 @@ namespace UnityFigmaBridge.Editor.Nodes
             nodeGameObject.transform.SetParent(parentTransform, false);
             var nodeRectTransform = nodeGameObject.transform as RectTransform;
             
-            // Apply transform
-            NodeTransformManager.ApplyFigmaTransform(nodeRectTransform, figmaNode, parentFigmaNode,nodeRecursionDepth >0);
+            // In some cases we want nodes to be substituted a server-rendered bitmap. Check to see if this is needed
+            var matchingServerRenderEntry = figmaImportProcessData.ServerRenderNodes.FirstOrDefault((testNode) => testNode.SourceNode.id == figmaNode.id);
+            
+            // Apply transform. For server render entries, use absolute bounding box
+            if (matchingServerRenderEntry!=null) NodeTransformManager.ApplyAbsoluteBoundsFigmaTransform(nodeRectTransform, figmaNode, parentFigmaNode,nodeRecursionDepth >0);
+            else NodeTransformManager.ApplyFigmaTransform(nodeRectTransform, figmaNode, parentFigmaNode,nodeRecursionDepth >0);
             
             // Add on a figmaNode to store the reference to the FIGMA figmaNode id
             nodeGameObject.AddComponent<FigmaNodeObject>().NodeId=figmaNode.id;
@@ -133,8 +137,6 @@ namespace UnityFigmaBridge.Editor.Nodes
                 // Otherwise we assume we are missing the definition, so just create as normal
             }
             
-            // In some cases we want nodes to be substituted a server-rendered bitmap. Check to see if this is needed
-            var matchingServerRenderEntry = figmaImportProcessData.ServerRenderNodes.FirstOrDefault((testNode) => testNode.SourceNode.id == figmaNode.id);
             if (matchingServerRenderEntry!=null)
             {
                 // Attach a simple image node (no need for custom renderer)

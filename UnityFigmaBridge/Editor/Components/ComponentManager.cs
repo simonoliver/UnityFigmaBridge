@@ -179,14 +179,18 @@ namespace UnityFigmaBridge.Editor.Components
             // Apply prototype elements for this node as required (such as buttons etc
             PrototypeFlowManager.ApplyPrototypeFunctionalityToNode(node, nodeObject, figmaImportProcessData);
             
+            // If this is a substitution, ignore children (as they wont exist) and apply absolute bounds transform (as rotation already applied)
+            if (FigmaNodeManager.NodeIsSubstitution(node, figmaImportProcessData))
+            {
+                NodeTransformManager.ApplyAbsoluteBoundsFigmaTransform(nodeObject.transform as RectTransform,node,parentNode,true);
+                return;
+            }
+            
             // Setup transform based on node properties
             NodeTransformManager.ApplyFigmaTransform(nodeObject.transform as RectTransform,node,parentNode,true);
             
             // Apply recursively for all children
             if (node.children == null) return;
-
-            // If this is a substitution, ignore children (as they wont exist)
-            if (FigmaNodeManager.NodeIsSubstitution(node, figmaImportProcessData)) return;
             
             // Cycle through each Figma child node data for this node
             foreach (var childNode in node.children)
