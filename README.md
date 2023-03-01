@@ -30,6 +30,7 @@ Please note - currently only supports **Unity 2021.3** and later!
 * Automatically generates required font assets (including downloading missing fonts from Google Fonts)
 * Binds Unity MonoBehaviours and fields to Figma objects
 * Server side rendering of vector shapes
+* Auto layout support
 
 ## Setting up
 
@@ -116,6 +117,10 @@ making sure all vectors are in a component so only rendered once)
 Screens will behave according to constraints setup in the constraints panel, with the exception of "Scale" constraint.
 You can use the *SafeArea* component to automatically adjust the safe area for devices that use them (eg iPhone), as
 mentioned in *Binding Behaviours*
+
+## Auto layout
+
+Vertical or Horizontal layout groups will be added to mirror the auto layout settings of a given object in the Figma document.
 
 ## Binding behaviours
 

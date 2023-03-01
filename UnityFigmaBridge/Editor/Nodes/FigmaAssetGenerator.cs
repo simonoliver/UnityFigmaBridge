@@ -155,6 +155,9 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Create any required unity components for this figmaNode. We seperate out application of properties to a seperate method
             FigmaNodeManager.CreateUnityComponentsForNode(nodeGameObject, figmaNode,figmaImportProcessData);
             
+            // Apply layout properties to this node as required (eg vertical layout groups etc)
+            FigmaLayoutManager.ApplyLayoutPropertiesForNode(nodeGameObject,figmaNode,figmaImportProcessData);
+            
             // Apply properties for this figmaNode
             FigmaNodeManager.ApplyUnityComponentPropertiesForNode(nodeGameObject,figmaNode,figmaImportProcessData);
             

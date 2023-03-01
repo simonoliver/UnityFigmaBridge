@@ -179,6 +179,9 @@ namespace UnityFigmaBridge.Editor.Components
             // Apply prototype elements for this node as required (such as buttons etc
             PrototypeFlowManager.ApplyPrototypeFunctionalityToNode(node, nodeObject, figmaImportProcessData);
             
+            // Apply layout properties to this node as required (eg vertical layout groups etc)
+            FigmaLayoutManager.ApplyLayoutPropertiesForNode(nodeObject,node,figmaImportProcessData);
+            
             // If this is a substitution, ignore children (as they wont exist) and apply absolute bounds transform (as rotation already applied)
             if (FigmaNodeManager.NodeIsSubstitution(node, figmaImportProcessData))
             {
