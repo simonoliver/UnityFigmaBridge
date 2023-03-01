@@ -21,7 +21,7 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Screenshots and example Figma File**
-If applicable, add screenshots and/or an example Figma Fileto help explain your problem.
+If applicable, add screenshots and/or a link to an example Figma file to help explain your problem.
 
 ** Version**
  - Unity Version: [e.g. Unity 2021.3.11]
