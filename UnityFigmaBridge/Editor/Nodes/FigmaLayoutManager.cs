@@ -15,14 +15,63 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <param name="nodeGameObject"></param>
         /// <param name="node"></param>
         /// <param name="figmaImportProcessData"></param>
+        /// <param name="scrollContentGameObject">Generated scroll content object (if generated)</param>
         public static void ApplyLayoutPropertiesForNode( GameObject nodeGameObject,Node node,
-            FigmaImportProcessData figmaImportProcessData)
+            FigmaImportProcessData figmaImportProcessData,out GameObject scrollContentGameObject)
         {
+            // Depending on whether scrolling is applied, we may want to add layout to this object or to the content
+            // holder
+            
+            var targetLayoutObject = nodeGameObject;
+            scrollContentGameObject = null;
+            
+            // Check scrolling requirements
+            var implementScrolling = node.type == NodeType.FRAME && node.overflowDirection != Node.OverflowDirection.NONE;
+            if (implementScrolling)
+            {
+                // This Frame implements scrolling, so we need to add in appropriate functionality
+                
+                // Add in a rect mask to implement clipping
+                if (node.clipsContent) nodeGameObject.AddComponent<RectMask2D>();
+
+                // Create the content clip and parent to this object
+                scrollContentGameObject = new GameObject($"{node.name}_ScrollContent", typeof(RectTransform));
+                var scrollContentRectTransform = scrollContentGameObject.transform as RectTransform;
+                scrollContentRectTransform.pivot = new Vector2(0, 1);
+                scrollContentRectTransform.anchorMin = scrollContentRectTransform.anchorMax =new Vector2(0,1);
+                scrollContentRectTransform.anchoredPosition=Vector2.zero;
+                scrollContentRectTransform.SetParent(nodeGameObject.transform, false);
+                
+
+                var scrollRectComponent = nodeGameObject.AddComponent<ScrollRect>();
+                scrollRectComponent.content = scrollContentGameObject.transform as RectTransform;
+                scrollRectComponent.horizontal =
+                    node.overflowDirection is Node.OverflowDirection.HORIZONTAL_SCROLLING 
+                        or Node.OverflowDirection.HORIZONTAL_AND_VERTICAL_SCROLLING;
+                
+                scrollRectComponent.vertical =
+                    node.overflowDirection is Node.OverflowDirection.VERTICAL_SCROLLING 
+                        or Node.OverflowDirection.HORIZONTAL_AND_VERTICAL_SCROLLING;
+
+
+                // If using layout, we need to use content size fitter to ensure proper sizing for child components
+                if (node.layoutMode != Node.LayoutMode.NONE)
+                {
+                    var contentSizeFitter = scrollContentGameObject.AddComponent<ContentSizeFitter>();
+                    contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                    contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                }
+
+                // Apply layout to this content clip
+                targetLayoutObject = scrollContentGameObject;
+            }
+            
+            
             // Ignore if layout mode is NONE
             if (node.layoutMode == Node.LayoutMode.NONE) return;
             
             // Remove an existing layout group if it exists
-            var existingLayoutGroup = nodeGameObject.GetComponent<HorizontalOrVerticalLayoutGroup>();
+            var existingLayoutGroup = targetLayoutObject.GetComponent<HorizontalOrVerticalLayoutGroup>();
             if (existingLayoutGroup!=null) Object.DestroyImmediate(existingLayoutGroup);
             
             HorizontalOrVerticalLayoutGroup layoutGroup = null;
@@ -30,15 +79,16 @@ namespace UnityFigmaBridge.Editor.Nodes
             switch (node.layoutMode)
             {
                 case Node.LayoutMode.VERTICAL:
-                    layoutGroup=nodeGameObject.AddComponent<VerticalLayoutGroup>();
+                    layoutGroup=targetLayoutObject.AddComponent<VerticalLayoutGroup>();
                     break;
                 case Node.LayoutMode.HORIZONTAL:
-                    layoutGroup=nodeGameObject.AddComponent<HorizontalLayoutGroup>();
+                    layoutGroup=targetLayoutObject.AddComponent<HorizontalLayoutGroup>();
                     break;
             }
             layoutGroup.padding = new RectOffset(Mathf.RoundToInt(node.paddingLeft), Mathf.RoundToInt(node.paddingRight),
                 Mathf.RoundToInt(node.paddingTop), Mathf.RoundToInt(node.paddingBottom));
             layoutGroup.spacing = node.itemSpacing;
+            
         }
     }
 }

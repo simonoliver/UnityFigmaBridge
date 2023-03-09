@@ -180,7 +180,7 @@ namespace UnityFigmaBridge.Editor.Components
             PrototypeFlowManager.ApplyPrototypeFunctionalityToNode(node, nodeObject, figmaImportProcessData);
             
             // Apply layout properties to this node as required (eg vertical layout groups etc)
-            FigmaLayoutManager.ApplyLayoutPropertiesForNode(nodeObject,node,figmaImportProcessData);
+            FigmaLayoutManager.ApplyLayoutPropertiesForNode(nodeObject,node,figmaImportProcessData,out var scrollContentGameObject);
             
             // If this is a substitution, ignore children (as they wont exist) and apply absolute bounds transform (as rotation already applied)
             if (FigmaNodeManager.NodeIsSubstitution(node, figmaImportProcessData))

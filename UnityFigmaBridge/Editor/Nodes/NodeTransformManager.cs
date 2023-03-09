@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityFigmaBridge.Editor.FigmaApi;
 
 namespace UnityFigmaBridge.Editor.Nodes
@@ -176,5 +177,42 @@ namespace UnityFigmaBridge.Editor.Nodes
             };
             return (new Vector2(anchorsX.x, anchorsY.x), new Vector2(anchorsX.y, anchorsY.y));
         }
+
+        /// <summary>
+        /// Gets the relative bounding box for the contents of all children. Useful for resizing for scroll content when
+        /// bounds are not declared explicitly in the document and auto-layout not used
+        /// </summary>
+        /// <param name="figmaNode"></param>
+        /// <returns></returns>
+        public static Rect GetRelativeBoundsForAllChildNodes(Node figmaNode)
+        {
+            if (figmaNode.children == null) return new Rect();
+            var mergedRect = new Rect();
+            for (var i = 0; i < figmaNode.children.Length; i++)
+            {
+                var childNode = figmaNode.children[i];
+                var relativePosition = new Vector2(childNode.absoluteBoundingBox.x - figmaNode.absoluteBoundingBox.x,
+                    childNode.absoluteBoundingBox.y - figmaNode.absoluteBoundingBox.y);
+                var size = new Vector2(childNode.absoluteBoundingBox.width, childNode.absoluteBoundingBox.height);
+                
+                if (i == 0)
+                {
+                    mergedRect.xMin = relativePosition.x;
+                    mergedRect.xMax = relativePosition.x+size.x;
+                    mergedRect.yMin = relativePosition.y;
+                    mergedRect.yMax = relativePosition.y+size.y;
+                }
+                else
+                {
+                    mergedRect.xMin = Mathf.Min(mergedRect.xMin,relativePosition.x);
+                    mergedRect.xMax = Mathf.Max(mergedRect.xMax,relativePosition.x+size.x);
+                    mergedRect.yMin = Mathf.Min(mergedRect.yMin,relativePosition.y);
+                    mergedRect.yMax = Mathf.Max(mergedRect.yMax,relativePosition.y+size.y);
+                }
+            }
+
+            return mergedRect;
+        }
+        
     }
 }

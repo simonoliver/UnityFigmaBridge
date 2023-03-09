@@ -31,6 +31,7 @@ Please note - currently only supports **Unity 2021.3** and later!
 * Binds Unity MonoBehaviours and fields to Figma objects
 * Server side rendering of vector shapes
 * Auto layout support
+* Scrolling frames (using overflow scrolling settings)
 
 ## Setting up
 
