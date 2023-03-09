@@ -118,9 +118,13 @@ namespace UnityFigmaBridge.Editor.Nodes
             // We'll use absolute bounding box size
             targetRectTransform.sizeDelta = new Vector2(figmaNode.absoluteBoundingBox.width, figmaNode.absoluteBoundingBox.height);
             
-            // Position will be relative to parent absoluteBoundingBox
-            targetRectTransform.anchoredPosition=new Vector2(figmaNode.absoluteBoundingBox.x-figmaParentNode.absoluteBoundingBox.x,
-                -(figmaNode.absoluteBoundingBox.y-figmaParentNode.absoluteBoundingBox.y));
+            // Position will be relative to parent absoluteBoundingBox (if it exists). Pages have no absoluteBoundingBox so assume pos of 0,0
+            var figmaParentNodePosition = figmaParentNode.absoluteBoundingBox != null
+                ? new Vector2(figmaParentNode.absoluteBoundingBox.x, figmaParentNode.absoluteBoundingBox.y)
+                : Vector2.zero;
+            
+            targetRectTransform.anchoredPosition=new Vector2(figmaNode.absoluteBoundingBox.x-figmaParentNodePosition.x,
+                -(figmaNode.absoluteBoundingBox.y-figmaParentNodePosition.y));
             
             ApplyFigmaConstraints(targetRectTransform, figmaNode, figmaParentNode);
             

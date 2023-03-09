@@ -122,7 +122,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             FigmaServerRenderData figmaServerRenderData = null;
             // Execute server-side rendering. Sending this webRequest will return a list of all images to download
             var serverRenderUrl =
-                $"https://api.figma.com/v1/images/{fileId}?ids={serverNodeCsvList}&scale={serverRenderImageScale}";
+                $"https://api.figma.com/v1/images/{fileId}?ids={serverNodeCsvList}&scale={serverRenderImageScale}&use_absolute_bounds=true";
             var webRequest = UnityWebRequest.Get(serverRenderUrl);
             webRequest.SetRequestHeader("X-Figma-Token", accessToken);
 
