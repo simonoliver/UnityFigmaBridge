@@ -272,7 +272,8 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         private static bool GetNodeSubstitutionStatus(Node node,int recursiveNodeDepth)
         {
             // We never substitute screens or pages
-            if (recursiveNodeDepth <=1) return false;
+            if (node.type == NodeType.CANVAS) return false;
+            if (recursiveNodeDepth <=1 && node.type== NodeType.FRAME) return false;
             
             // If a given node has the word "render", mark for rendering
             if (node.name.ToLower().Contains("render")) return true;
@@ -282,11 +283,12 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             
             // The pattern we identify for server side vector rendering is:
             // * At least one sub nodes of type vector
-            // * Only containing sub nodes of type VECTOR, FRAME, GROUP
-            var validNodeTypesForVectorRender = new NodeType[] { NodeType.VECTOR, NodeType.GROUP, NodeType.FRAME };
+            // * Only containing sub nodes of type VECTOR, FRAME, GROUP, COMPONENT, INSTANCE
+            var validNodeTypesForVectorRender = new NodeType[] { NodeType.VECTOR, NodeType.GROUP, NodeType.FRAME, NodeType.COMPONENT, NodeType.INSTANCE };
             var nodeTypeCount = new int[validNodeTypesForVectorRender.Length];
             var onlyValidNodeTypesFound =
                 GetNodeChildrenExclusivelyOfTypes(node, validNodeTypesForVectorRender, nodeTypeCount);
+            
             if (onlyValidNodeTypesFound && nodeTypeCount[0]>0) return true;
             
             return false;
