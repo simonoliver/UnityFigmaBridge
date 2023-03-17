@@ -29,6 +29,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                 case NodeType.STAR:
                 case NodeType.COMPONENT:
                 case NodeType.INSTANCE:
+                case NodeType.SECTION:
                     var needsImageComponent = node.fills.Length > 0 || node.strokes.Length > 0;
                     if (NodeIsSubstitution(node, figmaImportProcessData)) break;
                     if (!needsImageComponent) break;
@@ -344,6 +345,8 @@ namespace UnityFigmaBridge.Editor.Nodes
                 case NodeType.SHAPE_WITH_TEXT:
                     break;
                 case NodeType.CONNECTOR:
+                    break;
+                case NodeType.SECTION:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

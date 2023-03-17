@@ -158,8 +158,8 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Apply properties for this figmaNode
             FigmaNodeManager.ApplyUnityComponentPropertiesForNode(nodeGameObject,figmaNode,figmaImportProcessData);
             
-            // Apply effects for this figmaNode
-            EffectManager.ApplyAllFigmaEffectsToUnityNode(nodeGameObject,figmaNode,figmaImportProcessData);
+            // Apply effects for this figmaNode (if there is an effects node. Some dont have this (eg SECTION)
+            if (figmaNode.effects!=null) EffectManager.ApplyAllFigmaEffectsToUnityNode(nodeGameObject,figmaNode,figmaImportProcessData);
             
             // Apply layout properties to this node as required (eg vertical layout groups etc). This also implements scrolling
             FigmaLayoutManager.ApplyLayoutPropertiesForNode(nodeGameObject,figmaNode,figmaImportProcessData,out var scrollContentGameObject);
@@ -200,13 +200,16 @@ namespace UnityFigmaBridge.Editor.Nodes
 
             switch (figmaNode.type)
             {
-                // If this is a 0 depth frame, treat as a flowScreen and create a prefab
-                case NodeType.FRAME when nodeRecursionDepth == 0:
-                    SaveFigmaScreenAsPrefab(figmaNode, nodeRectTransform, figmaImportProcessData);
+                // If the parent is either a canvas or section, treat as a flowScreen and create a prefab
+                case NodeType.FRAME when parentFigmaNode is { type: NodeType.CANVAS or NodeType.SECTION }:
+                    SaveFigmaScreenAsPrefab(figmaNode, parentFigmaNode, nodeRectTransform, figmaImportProcessData);
                     break;
                 // For the originally defined components, save as a prefab to be used for later instantiation
                 case NodeType.COMPONENT:
                     ComponentManager.GenerateComponentAssetFromNode(figmaNode, nodeGameObject, figmaImportProcessData);
+                    break;
+                case NodeType.SECTION:
+                    RegisterFigmaSection(figmaNode, figmaImportProcessData);
                     break;
             }
 
@@ -216,13 +219,14 @@ namespace UnityFigmaBridge.Editor.Nodes
             return nodeGameObject;
         }
 
+        
         /// <summary>
         /// Create a flowScreen prefab from a generated figma asset
         /// </summary>
         /// <param name="node"></param>
         /// <param name="screenRectTransform"></param>
         /// <param name="figmaImportProcessData"></param>
-        private static void SaveFigmaScreenAsPrefab(Node node, RectTransform screenRectTransform, FigmaImportProcessData figmaImportProcessData)
+        private static void SaveFigmaScreenAsPrefab(Node node, Node parentNode,RectTransform screenRectTransform, FigmaImportProcessData figmaImportProcessData)
         {
             var screenNameCount = figmaImportProcessData.ScreenPrefabNameCounter.ContainsKey(node.name)
                 ? figmaImportProcessData.ScreenPrefabNameCounter[node.name] : 0;
@@ -246,11 +250,47 @@ namespace UnityFigmaBridge.Editor.Nodes
                 {
                     FigmaScreenPrefab = screenPrefab,
                     FigmaNodeId = node.id,
-                    FigmaScreenName = FigmaPaths.GetScreenNameForNode(node, screenNameCount)
+                    FigmaScreenName = FigmaPaths.GetScreenNameForNode(node, screenNameCount),
+                    // Store the section that this is part of (if applicable)
+                    ParentSectionNodeId = parentNode is { type: NodeType.SECTION } ? parentNode.id : string.Empty
                 });
             }
             
             figmaImportProcessData.ScreenPrefabs.Add(screenPrefab);
+        }
+
+
+        /// <summary>
+        /// Registers a figma section. This is needed for flow controller to properly transition between sections
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="figmaImportProcessData"></param>
+        private static void RegisterFigmaSection(Node node, FigmaImportProcessData figmaImportProcessData)
+        {
+            if (figmaImportProcessData.Settings.BuildPrototypeFlow)
+            {
+                
+                // We want to find the default start point for this section
+                var prototypeFlowStartNodeId = string.Empty;
+                var prototypeFlowStartNodeName = string.Empty;
+                // Search through all start points and see if they are a child of this section
+                foreach (var flowStartId in figmaImportProcessData.PrototypeFlowStartPoints)
+                {
+                    var matchingNode = FigmaDataUtils.GetFigmaNodeInChildren(node, flowStartId);
+                    if (matchingNode == null) continue;
+                    // We've found a match
+                    prototypeFlowStartNodeId = flowStartId;
+                    prototypeFlowStartNodeName = matchingNode.name;
+                }
+                
+                figmaImportProcessData.PrototypeFlowController.RegisterFigmaSection(new FigmaSection
+                {
+                    FigmaNodeId = node.id,
+                    FigmaPrototypeFlowStartNodeId = prototypeFlowStartNodeId,
+                    FigmaPrototypeFlowStartNodeName= prototypeFlowStartNodeName,
+                    FigmaNodeName = node.name,
+                });
+            }
         }
     }
 

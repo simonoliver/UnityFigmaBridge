@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace UnityFigmaBridge.Editor.FigmaApi
 {
@@ -52,7 +53,8 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         INSTANCE,
         STICKY,
         SHAPE_WITH_TEXT,
-        CONNECTOR
+        CONNECTOR,
+        SECTION
     }
     
     
@@ -129,9 +131,15 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// </summary>
         public Color backgroundColor;
         /// <summary>
-        /// Node ID that corresponds to the start frame for prototypes
+        ///[DEPRECATED] Node ID that corresponds to the start frame for prototypes.
         /// </summary>
+        [Obsolete("This is deprecated with the introduction of multiple flows. Please use the flowStartingPoints field")]
         public string prototypeStartNodeID;
+
+        /// <summary>
+        /// An array of flow starting points sorted by its position in the prototype settings panel.
+        /// </summary>
+        public FlowStartingPoint[] flowStartingPoints;
 
         /// <summary>
         /// An array of export settings representing images to export from the canvas
@@ -1061,7 +1069,23 @@ A map of OpenType feature flags to 1 or 0, 1 if it is enabled and 0 if it is dis
 
         public StyleType style_type;
     }
-    
+
+
+    /// <summary>
+    /// A flow starting point used when launching a prototype to enter Presentation view
+    /// </summary>
+    public class FlowStartingPoint
+    {
+        /// <summary>
+        /// Unique identifier specifying the frame
+        /// </summary>
+        public string nodeId;
+        
+        /// <summary>
+        /// Name of flow
+        /// </summary>
+        public string name;
+    }
    
     
     

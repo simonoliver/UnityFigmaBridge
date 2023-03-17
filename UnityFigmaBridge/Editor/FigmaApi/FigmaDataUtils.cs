@@ -106,7 +106,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <param name="node"></param>
         /// <param name="nodeId"></param>
         /// <returns></returns>
-        private static Node GetFigmaNodeInChildren(Node node,string nodeId)
+        public static Node GetFigmaNodeInChildren(Node node,string nodeId)
         {
             if (node.children == null) return null;
             foreach (var childNode in node.children)
@@ -351,7 +351,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         }
 
         /// <summary>
-        /// Finds start id, from first page where one found
+        /// Finds Flow Starting Point id, from first page where one found
         /// </summary>
         /// <param name="sourceFile"></param>
         /// <returns></returns>
@@ -359,10 +359,27 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         {
             foreach (var canvasNode in sourceFile.document.children)
             {
-                if (!string.IsNullOrEmpty(canvasNode.prototypeStartNodeID)) return canvasNode.prototypeStartNodeID;
+                if (canvasNode.flowStartingPoints.Length>0) return canvasNode.flowStartingPoints[0].nodeId;
             }
 
             return string.Empty;
         }
+
+        /// <summary>
+        /// Lists all prototype flow starting points in a given Figma file
+        /// </summary>
+        /// <param name="sourceFile"></param>
+        /// <returns></returns>
+        public static List<string> GetAllPrototypeFlowStartingPoints(FigmaFile sourceFile)
+        {
+            var allFlowStartingPoints = new List<string>();
+            foreach (var canvasNode in sourceFile.document.children)
+            {
+                if (canvasNode.flowStartingPoints == null) continue;
+                allFlowStartingPoints.AddRange(canvasNode.flowStartingPoints.Select(flowStartingPoint => flowStartingPoint.nodeId));
+            }
+            return allFlowStartingPoints;
+        }
+        
     }
 }

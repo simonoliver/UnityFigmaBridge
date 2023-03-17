@@ -366,10 +366,9 @@ namespace UnityFigmaBridge.Editor
                 ComponentData = componentData,
                 ServerRenderNodes = serverRenderNodes,
                 PrototypeFlowController = s_PrototypeFlowController,
-                FontMap = fontMap
+                FontMap = fontMap,
+                PrototypeFlowStartPoints = FigmaDataUtils.GetAllPrototypeFlowStartingPoints(figmaFile)
             };
-            
-            
             
             
             // Clear the existing screens on the flowScreen controller
@@ -438,7 +437,7 @@ namespace UnityFigmaBridge.Editor
                     }
 
                     var screenInstance=(GameObject)PrefabUtility.InstantiatePrefab(defaultScreenData.FigmaScreenPrefab, figmaBridgeProcessData.PrototypeFlowController.ScreenParentTransform);
-                    figmaBridgeProcessData.PrototypeFlowController.SetCurrentScreen(screenInstance,true);
+                    figmaBridgeProcessData.PrototypeFlowController.SetCurrentScreen(screenInstance,defaultScreenData.FigmaNodeId,true);
                 }
                 // Write CS file with references to flowScreen name
                 if (s_UnityFigmaBridgeSettings.CreateScreenNameCSharpFile) ScreenNameCodeGenerator.WriteScreenNamesCodeFile(figmaBridgeProcessData.ScreenPrefabs);

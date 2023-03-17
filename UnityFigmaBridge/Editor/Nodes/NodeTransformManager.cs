@@ -40,7 +40,8 @@ namespace UnityFigmaBridge.Editor.Nodes
                                               figmaNode.children.Length > 0;
             var constraintsSourceNode = useFirstChildForConstraints ? figmaNode.children[0] : figmaNode;
 
-            ApplyFigmaConstraints(targetRectTransform, constraintsSourceNode, figmaParentNode);
+            // Some nodes will not have a constraints node (eg SECTION nodes)
+            if (constraintsSourceNode.constraints!=null) ApplyFigmaConstraints(targetRectTransform, constraintsSourceNode, figmaParentNode);
             
             // We'll also use these properties to apply pivot after, where required
             if (centerPivot) SetPivot(targetRectTransform, new Vector2(0.5f, 0.5f));
@@ -127,7 +128,8 @@ namespace UnityFigmaBridge.Editor.Nodes
             targetRectTransform.anchoredPosition=new Vector2(figmaNode.absoluteBoundingBox.x-figmaParentNodePosition.x,
                 -(figmaNode.absoluteBoundingBox.y-figmaParentNodePosition.y));
             
-            ApplyFigmaConstraints(targetRectTransform, figmaNode, figmaParentNode);
+            // Some nodes will not have a constraints node (eg SECTION nodes)
+            if (figmaNode.constraints!=null) ApplyFigmaConstraints(targetRectTransform, figmaNode, figmaParentNode);
             
             // We'll also use these properties to apply pivot after, where required
             if (centerPivot) SetPivot(targetRectTransform, new Vector2(0.5f, 0.5f));

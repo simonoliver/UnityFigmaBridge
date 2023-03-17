@@ -24,6 +24,34 @@ namespace UnityFigmaBridge.Runtime.UI
         /// Node name (allowing screens to be referenced by name)
         /// </summary>
         public string FigmaScreenName;
+        /// <summary>
+        /// Parent section Node Id (if part of a section)
+        /// </summary>
+        public string ParentSectionNodeId;
+    }
+    
+    /// <summary>
+    /// Holds all figma flowScreen data that is needed by UnityUI
+    /// </summary>
+    [System.Serializable]
+    public class FigmaSection
+    {
+        /// <summary>
+        /// Figma Node ID for this section
+        /// </summary>
+        public string FigmaNodeId;
+        /// <summary>
+        /// Node id of flow start for this section
+        /// </summary>
+        public string FigmaPrototypeFlowStartNodeId;
+        /// <summary>
+        /// Node name of flow start for this section
+        /// </summary>
+        public string FigmaPrototypeFlowStartNodeName;
+        /// <summary>
+        /// Node name (allowing screens to be referenced by name)
+        /// </summary>
+        public string FigmaNodeName;
     }
     
     
@@ -77,7 +105,13 @@ namespace UnityFigmaBridge.Runtime.UI
         [SerializeField] private GameObject m_CurrentScreenInstance;
         [SerializeField] private string m_PrototypeFlowInitialScreenId;
         [SerializeField] private List<FigmaFlowScreen> m_Screens = new();
-        
+        [SerializeField] private List<FigmaSection> m_Sections = new();
+
+        /// <summary>
+        /// Tracks the current screen used in each section - kept consistent when transitioning between sections
+        /// </summary>
+        private Dictionary<string, string> m_CurrentScreenForSection = new();
+
         /// <summary>
         /// Called on start
         /// </summary>
@@ -86,8 +120,15 @@ namespace UnityFigmaBridge.Runtime.UI
             // If we start with a specific flowScreen, need to invoke event to set up required state
             if (CurrentScreenInstance != null)
                 OnScreenChanged?.Invoke(CurrentScreenInstance.name,CurrentScreenInstance);
-        }
 
+            // Set each active section screen as the default
+            foreach (var section in m_Sections)
+                m_CurrentScreenForSection[section.FigmaNodeId] = section.FigmaPrototypeFlowStartNodeId;
+            
+            // If this is in a section, record this
+            RegisterSectionChangeForScreen(m_PrototypeFlowInitialScreenId);
+        }
+        
         /// <summary>
         /// Returns definition for a given Figma Flow Screen by Node ID
         /// </summary>
@@ -96,6 +137,16 @@ namespace UnityFigmaBridge.Runtime.UI
         private FigmaFlowScreen GetFlowScreenById(string screenNodeId)
         {
             return m_Screens.Find((screen) => screen.FigmaNodeId == screenNodeId);
+        }
+        
+        /// <summary>
+        /// Returns definition for a given Figma Section by Node ID
+        /// </summary>
+        /// <param name="screenNodeId"></param>
+        /// <returns></returns>
+        private FigmaSection GetSectionById(string sectionNodeId)
+        {
+            return m_Sections.Find((section) => section.FigmaNodeId == sectionNodeId);
         }
 
         /// <summary>
@@ -121,6 +172,15 @@ namespace UnityFigmaBridge.Runtime.UI
         {
             m_Screens.Add(flowScreen);
         }
+       
+       /// <summary>
+       /// Adds a section definition to the flow
+       /// </summary>
+       /// <param name="figmaSection"></param>
+       public void RegisterFigmaSection(FigmaSection figmaSection)
+       {
+           m_Sections.Add(figmaSection);
+       }
         
         /// <summary>
         /// Clears all currently registered figma screens and destroys any active screen instance
@@ -128,6 +188,7 @@ namespace UnityFigmaBridge.Runtime.UI
         public void ClearFigmaScreens()
         {
             m_Screens.Clear();
+            m_Sections.Clear();
             DestroyImmediate(CurrentScreenInstance);
             m_CurrentScreenInstance = null;
         }
@@ -172,17 +233,24 @@ namespace UnityFigmaBridge.Runtime.UI
         /// Set screen by Figma Node id
         /// </summary>
         /// <param name="screenNodeId"></param>
-        public void SetCurrentScreenByNodeId(string screenNodeId)
+        public void SetCurrentScreenByNodeId(string nodeId)
         {
-            var screenData = GetFlowScreenById(screenNodeId);
+            // Check if this is a section node
+            if (m_CurrentScreenForSection.ContainsKey(nodeId))
+            {
+                // It's a section so use the active screen for this section
+                nodeId = m_CurrentScreenForSection[nodeId];
+            }
+            
+            var screenData = GetFlowScreenById(nodeId);
             if (screenData == null)
             {
-                Debug.LogWarning($"Definition for screen missing: '{screenNodeId}'");
+                Debug.LogWarning($"Definition for screen or section missing: '{nodeId}'");
                 return;
             }
             var screenObject = Instantiate(screenData.FigmaScreenPrefab, m_ScreenParentTransform);
             screenObject.name = screenData.FigmaScreenPrefab.name;
-            SetCurrentScreen(screenObject,false);
+            SetCurrentScreen(screenObject,screenData.FigmaNodeId,false);
         }
 
 
@@ -200,7 +268,7 @@ namespace UnityFigmaBridge.Runtime.UI
             }
             var newScreen=Instantiate(screenData.FigmaScreenPrefab, m_ScreenParentTransform);
             newScreen.name = screenName;
-            SetCurrentScreen(newScreen,false);
+            SetCurrentScreen(newScreen,screenData.FigmaNodeId,false);
         }
         
         /// <summary>
@@ -208,7 +276,7 @@ namespace UnityFigmaBridge.Runtime.UI
         /// </summary>
         /// <param name="screen"></param>
         /// <param name="fromEditor"></param>
-        public void SetCurrentScreen(GameObject screen,bool fromEditor)
+        public void SetCurrentScreen(GameObject screen,string nodeId, bool fromEditor)
         {
             // If in editor (non runtime) mode, destroy immediately 
             if (fromEditor) DestroyImmediate(CurrentScreenInstance);
@@ -219,6 +287,9 @@ namespace UnityFigmaBridge.Runtime.UI
 
             // Set local ref
             m_CurrentScreenInstance = screen;
+            
+            // Registers any change to section
+            RegisterSectionChangeForScreen(nodeId);
             
             // Ensure screen fills current canvas
             var screenTransform = (RectTransform)m_CurrentScreenInstance.transform;
@@ -232,6 +303,17 @@ namespace UnityFigmaBridge.Runtime.UI
                 OnScreenChanged?.Invoke(screen.name,screen);
             }
         }
-
+        
+        /// <summary>
+        /// Registers the current active screen for a given section
+        /// </summary>
+        /// <param name="screenNodeId"></param>
+        private void RegisterSectionChangeForScreen(string screenNodeId)
+        {
+            var screenData = GetFlowScreenById(screenNodeId);
+            if (screenData == null) return;
+            if (string.IsNullOrEmpty(screenData.ParentSectionNodeId)) return;
+            m_CurrentScreenForSection[screenData.ParentSectionNodeId] = screenNodeId;
+        }
     }
 }
