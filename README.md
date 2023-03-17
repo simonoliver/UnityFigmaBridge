@@ -23,7 +23,7 @@ Please note - currently only supports **Unity 2021.3** and later!
 ## Features
 
 * Supports recreation of core Figma elements as native Unity objects
-* Recreate Figma prototype flows to easily build Unity prototypes
+* Recreate Figma prototype flows to easily build Unity prototypes, including Sections
 * SDF renderer for core Figma shapes (Ellipse, Rectangle, Star)
 * Recreates Figma components as prefabs and links accordingly (including nested components)
 * Responsive layout and support for device safe areas
@@ -54,7 +54,10 @@ Please note - currently only supports **Unity 2021.3** and later!
 By default, the importer will recreate the prototype flow found in the Figma File (as defined in the prototype tab). You
 can disable this by turning off "Build Prototype Flow" which will just generate Figma assets.
 
-If *Build Prototype Flow" is selected, it will create required assets (Canvas, ProtoTypeController, EventSystem) and
+It also supports Figma sections, implementing [Figma's Sections behaviour here](https://help.figma.com/hc/en-us/articles/9771500257687-Organize-your-canvas-with-sections). 
+Active screens in each section will be remembered during prototype play.
+
+If *Build Prototype Flow* is selected, it will create required assets (Canvas, ProtoTypeController, EventSystem) and
 instantiate the default screen in the active scene. Hit play to start the prototype flow and buttons will transition to
 the specified screen as per the Figma document. Currently there is a dew
 
