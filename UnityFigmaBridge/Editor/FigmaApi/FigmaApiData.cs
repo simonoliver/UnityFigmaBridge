@@ -553,8 +553,16 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         EASE_OUT,   // Ease out with an animation curve similar to CSS ease-out.
         EASE_IN_AND_OUT, // Ease in and then out with an animation curve similar to CSS ease-in-out.
         LINEAR,          // No easing, similar to CSS linear.
-        GENTLE_SPRING,
-        CUSTOM_BEZIER
+        GENTLE_SPRING, // Gentle spring animation similar to react-spring.
+        CUSTOM_BEZIER, 
+        QUICK,
+        GENTLE,
+        BOUNCY,
+        SLOW,
+        CUSTOM_SPRING,
+        EASE_IN_BACK,
+        EASE_OUT_BACK,
+        EASE_IN_AND_OUT_BACK
     }
 
     /// <summary>
