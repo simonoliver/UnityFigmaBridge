@@ -630,7 +630,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             MIN, // Grid starts at the left or top of the frame
             STRETCH, // Grid is stretched to fit the frame
             CENTER, // Grid is center aligned
-            MAX,
+            MAX, // Grid is right or bottom
         }
 
         /// <summary>
