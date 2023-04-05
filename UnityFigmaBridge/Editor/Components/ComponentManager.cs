@@ -57,11 +57,13 @@ namespace UnityFigmaBridge.Editor.Components
         /// <param name="node"></param>
         /// <param name="nodeGameObject"></param>
         /// <param name="figmaImportProcessData"></param>
-        public static void GenerateComponentAssetFromNode(Node node, GameObject nodeGameObject, FigmaImportProcessData figmaImportProcessData)
+        public static void GenerateComponentAssetFromNode(Node node, Node parentNode, GameObject nodeGameObject, FigmaImportProcessData figmaImportProcessData)
         {
-            var componentCount = figmaImportProcessData.ComponentData.GetComponentNameCount(node.name);
-            var prefabAssetPath = FigmaPaths.GetPathForComponentPrefab(node,componentCount);
-            figmaImportProcessData.ComponentData.IncrementComponentNameCount(node.name,componentCount);
+            // If this is part of a component set (eg a variant), append the name of the component set to the component name
+            var nodeName=parentNode is { type: NodeType.COMPONENT_SET } ? $"{parentNode.name}-{node.name}" : node.name;
+            var componentCount = figmaImportProcessData.ComponentData.GetComponentNameCount(nodeName);
+            var prefabAssetPath = FigmaPaths.GetPathForComponentPrefab(nodeName,componentCount);
+            figmaImportProcessData.ComponentData.IncrementComponentNameCount(nodeName,1);
             var componentPrefab = PrefabUtility.SaveAsPrefabAssetAndConnect(nodeGameObject, prefabAssetPath, InteractionMode.UserAction);
             figmaImportProcessData.ComponentData.RegisterComponentPrefab(node.id,componentPrefab);
         }

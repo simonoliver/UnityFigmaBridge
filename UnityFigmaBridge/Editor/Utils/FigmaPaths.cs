@@ -73,10 +73,8 @@ namespace UnityFigmaBridge.Editor.Utils
             return $"{FigmaPagePrefabFolder}/{ReplaceUnsafeCharacters(node.name)}.prefab";
         }
         
-        public static string GetPathForComponentPrefab(Node node,int duplicateCount)
+        public static string GetPathForComponentPrefab(string nodeName,int duplicateCount)
         {
-            //var safeFilename = $"{node.name}_{FigmaFileUtils.ReplaceUnsafeFileCharactersForNodeId(node.id)}";
-            var nodeName = $"{node.name}";
             // If name already used, create a unique name
             if (duplicateCount > 0) nodeName += $"_{duplicateCount}";
             nodeName = ReplaceUnsafeCharacters(nodeName);

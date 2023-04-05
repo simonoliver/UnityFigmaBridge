@@ -147,7 +147,7 @@ namespace UnityFigmaBridge.Editor.Nodes
 
                 // If this is a component, we want to generate a prefab, to be used to link to instances later
                 if (figmaNode.type == NodeType.COMPONENT)
-                    ComponentManager.GenerateComponentAssetFromNode(figmaNode, nodeGameObject, figmaImportProcessData);
+                    ComponentManager.GenerateComponentAssetFromNode(figmaNode, parentFigmaNode, nodeGameObject, figmaImportProcessData);
                 
                 return nodeGameObject;
             }
@@ -206,7 +206,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                     break;
                 // For the originally defined components, save as a prefab to be used for later instantiation
                 case NodeType.COMPONENT:
-                    ComponentManager.GenerateComponentAssetFromNode(figmaNode, nodeGameObject, figmaImportProcessData);
+                    ComponentManager.GenerateComponentAssetFromNode(figmaNode, parentFigmaNode, nodeGameObject, figmaImportProcessData);
                     break;
                 case NodeType.SECTION:
                     RegisterFigmaSection(figmaNode, figmaImportProcessData);
