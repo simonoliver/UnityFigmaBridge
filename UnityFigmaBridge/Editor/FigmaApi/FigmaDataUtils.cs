@@ -118,6 +118,42 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             // Not found
             return null;
         }
+
+        /// <summary>
+        /// Returns the full hierarchical path for a given node in a document - helpful for debugging
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="figmaFile"></param>
+        /// <returns></returns>
+        public static string GetFullPathForNode(Node node,FigmaFile figmaFile)
+        {
+            var pathStack = new Stack<string>();
+            var found=GetPathForNodeRecursive(figmaFile.document, node,pathStack );
+            return string.Join("/",pathStack.Reverse());
+        }
+        
+        /// <summary>
+        /// Recursively search for a node in a figma file and push/pop to stack to track heirarchy
+        /// </summary>
+        /// <param name="searchNode"></param>
+        /// <param name="targetNode"></param>
+        /// <param name="pathStack"></param>
+        /// <returns></returns>
+        private static bool GetPathForNodeRecursive(Node searchNode, Node targetNode, Stack<string> pathStack)
+        {
+            pathStack.Push(searchNode.name);
+            if (searchNode == targetNode) return true;
+            if (searchNode.children != null)
+            {
+                foreach (var childNode in searchNode.children)
+                {
+                    if (GetPathForNodeRecursive(childNode, targetNode, pathStack)) return true;
+                }
+            }
+            pathStack.Pop(); // Not found, remove from stack
+            return false;
+        }
+       
         
         
         /// <summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityFigmaBridge.Editor.FigmaApi;
 using UnityFigmaBridge.Editor.Nodes;
 using UnityFigmaBridge.Editor.PrototypeFlow;
@@ -173,9 +174,26 @@ namespace UnityFigmaBridge.Editor.Components
         /// <param name="figmaImportProcessData"></param>
         private static void ApplyFigmaProperties(Node node, GameObject nodeObject,Node parentNode, FigmaImportProcessData figmaImportProcessData)
         {
-            // Apply properties for this node Object (eg characters to text)
-            FigmaNodeManager.ApplyUnityComponentPropertiesForNode(nodeObject,node,figmaImportProcessData);
-            
+            // There are two cases that this would be a substitution - either the component instance itself,
+            // or the original component node could have be a substitution (would have an image component that is NOT a FigmaImage)
+            // TODO - Optimise and remove need for Image component check
+            var existingImageComponent = nodeObject.GetComponent<Image>();
+            var isSubstitution = FigmaNodeManager.NodeIsSubstitution(node, figmaImportProcessData) || (existingImageComponent != null && existingImageComponent is not FigmaImage);
+            if (!isSubstitution)
+            {
+                try
+                {
+                    // Apply properties for this node Object (eg characters to text). Not needed if this is a substitution
+                    FigmaNodeManager.ApplyUnityComponentPropertiesForNode(nodeObject, node, figmaImportProcessData);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning(
+                        $"Exception applying properties for node '{FigmaDataUtils.GetFullPathForNode(node, figmaImportProcessData.SourceFile)}' - {e}",
+                        nodeObject);
+                }
+            }
+
             // Apply prototype elements for this node as required (such as buttons etc
             PrototypeFlowManager.ApplyPrototypeFunctionalityToNode(node, nodeObject, figmaImportProcessData);
             
@@ -183,7 +201,7 @@ namespace UnityFigmaBridge.Editor.Components
             FigmaLayoutManager.ApplyLayoutPropertiesForNode(nodeObject,node,figmaImportProcessData,out var scrollContentGameObject);
             
             // If this is a substitution, ignore children (as they wont exist) and apply absolute bounds transform (as rotation already applied)
-            if (FigmaNodeManager.NodeIsSubstitution(node, figmaImportProcessData))
+            if (isSubstitution)
             {
                 NodeTransformManager.ApplyAbsoluteBoundsFigmaTransform(nodeObject.transform as RectTransform,node,parentNode,true);
                 return;
