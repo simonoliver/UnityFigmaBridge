@@ -183,6 +183,15 @@ namespace UnityFigmaBridge.Editor.Nodes
                 case NodeType.CONNECTOR:
                     break;
             }
+            
+            // Setup opacity - this is done by applying a CanvasGroup
+            // Only apply if the opacity is less than 1, or of there is a CanvasGroup already
+            if (node.opacity < 1 || nodeGameObject.GetComponent<CanvasGroup>()!=null)
+            {
+                var canvasGroup = nodeGameObject.GetComponent<CanvasGroup>();
+                if (canvasGroup == null) canvasGroup = nodeGameObject.AddComponent<CanvasGroup>();
+                canvasGroup.alpha = node.opacity;
+            }
             // Setup visibility
             nodeGameObject.SetActive(node.visible);
         }

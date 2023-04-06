@@ -243,7 +243,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <summary>
         /// Opacity of the node
         /// </summary>
-        public float opacity;
+        public float opacity=1;
             
         /// <summary>
         /// Bounding box of the node in absolute space coordinates
