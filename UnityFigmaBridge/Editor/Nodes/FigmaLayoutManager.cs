@@ -10,6 +10,18 @@ namespace UnityFigmaBridge.Editor.Nodes
     public static class FigmaLayoutManager
     {
         /// <summary>
+        /// Retrieves and returns the specified component if it already exists. If it does not exist, it is added and returned
+        /// </summary>
+        /// <param name="T"></param>
+        /// <param name="gameObject"></param>
+        static T GetOrAddComponent<T>(GameObject gameObject) where T : UnityEngine.Component
+        {
+            T component = gameObject.GetComponent<T>();
+            if (component == null) component = gameObject.AddComponent<T>() as T;
+            return component;
+        }
+
+        /// <summary>
         /// Applies layout properties for a given node to a gameObject, using Vertical/Horizontal layout groups
         /// </summary>
         /// <param name="nodeGameObject"></param>
@@ -32,7 +44,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                 // This Frame implements scrolling, so we need to add in appropriate functionality
                 
                 // Add in a rect mask to implement clipping
-                if (node.clipsContent) nodeGameObject.AddComponent<RectMask2D>();
+                if (node.clipsContent) GetOrAddComponent<RectMask2D>(nodeGameObject);
 
                 // Create the content clip and parent to this object
                 scrollContentGameObject = new GameObject($"{node.name}_ScrollContent", typeof(RectTransform));
@@ -42,13 +54,12 @@ namespace UnityFigmaBridge.Editor.Nodes
                 scrollContentRectTransform.anchoredPosition=Vector2.zero;
                 scrollContentRectTransform.SetParent(nodeGameObject.transform, false);
                 
-
-                var scrollRectComponent = nodeGameObject.AddComponent<ScrollRect>();
+                var scrollRectComponent = GetOrAddComponent<ScrollRect>(nodeGameObject);
                 scrollRectComponent.content = scrollContentGameObject.transform as RectTransform;
                 scrollRectComponent.horizontal =
                     node.overflowDirection is Node.OverflowDirection.HORIZONTAL_SCROLLING 
                         or Node.OverflowDirection.HORIZONTAL_AND_VERTICAL_SCROLLING;
-                
+
                 scrollRectComponent.vertical =
                     node.overflowDirection is Node.OverflowDirection.VERTICAL_SCROLLING 
                         or Node.OverflowDirection.HORIZONTAL_AND_VERTICAL_SCROLLING;
@@ -57,7 +68,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                 // If using layout, we need to use content size fitter to ensure proper sizing for child components
                 if (node.layoutMode != Node.LayoutMode.NONE)
                 {
-                    var contentSizeFitter = scrollContentGameObject.AddComponent<ContentSizeFitter>();
+                    var contentSizeFitter = GetOrAddComponent<ContentSizeFitter>(scrollContentGameObject);
                     contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                     contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 }
@@ -79,10 +90,10 @@ namespace UnityFigmaBridge.Editor.Nodes
             switch (node.layoutMode)
             {
                 case Node.LayoutMode.VERTICAL:
-                    layoutGroup=targetLayoutObject.AddComponent<VerticalLayoutGroup>();
+                    layoutGroup=GetOrAddComponent<VerticalLayoutGroup>(targetLayoutObject);
                     break;
                 case Node.LayoutMode.HORIZONTAL:
-                    layoutGroup=targetLayoutObject.AddComponent<HorizontalLayoutGroup>();
+                    layoutGroup=GetOrAddComponent<HorizontalLayoutGroup>(targetLayoutObject);
                     break;
             }
             layoutGroup.padding = new RectOffset(Mathf.RoundToInt(node.paddingLeft), Mathf.RoundToInt(node.paddingRight),

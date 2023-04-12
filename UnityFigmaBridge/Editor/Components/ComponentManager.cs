@@ -244,7 +244,7 @@ namespace UnityFigmaBridge.Editor.Components
             {
                 var childTransform = parentNodeTransform.transform.GetChild(childTestIndex);
                 var childNodeObject = childTransform.GetComponent<FigmaNodeObject>();
-                if (childNodeObject.NodeId == childNodeIdComponentRefId)
+                if (childNodeObject != null && childNodeObject.NodeId == childNodeIdComponentRefId)
                 {
                     return childTransform.gameObject;
                 }
