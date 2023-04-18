@@ -286,46 +286,95 @@ namespace UnityFigmaBridge.Runtime.UI
             if (m_Shape == ShapeType.Ellipse && Mathf.Abs(r.width - r.height) < 0.001f) rtSize.x += 0.001f;
 
             Vector2[] texCoords;
-            
-            
-            switch (m_ImageScaleMode)
-            {
-                case ImageScaleMode.Stretch:
-                    // Crop
-                    texCoords=new Vector2[]
-                    {
-                        new Vector2(m_ImageTransform[0].z, 1.0f - m_ImageTransform[1].z - m_ImageTransform[1].y),
-                        new Vector2(m_ImageTransform[0].z, 1.0f - m_ImageTransform[1].z),
-                        new Vector2(m_ImageTransform[0].z + m_ImageTransform[0].x, 1.0f - m_ImageTransform[1].z),
-                        new Vector2(m_ImageTransform[0].z + m_ImageTransform[0].x,
-                            1.0f - m_ImageTransform[1].z - m_ImageTransform[1].y),
-                    };
-                    break;
-                case ImageScaleMode.Tile:
-                    var renderWidth = sprite.rect.width*m_ImageScaleFactor;
-                    var renderHeight = sprite.rect.height*m_ImageScaleFactor;
-                    var tileFactor = new Vector2(r.width / renderWidth, r.height / renderHeight);
-                    texCoords=new Vector2[]
-                    {
-                        new Vector2(0, 1-tileFactor.y),
-                        new Vector2(0f, 1),
-                        new Vector2(tileFactor.x, 1),
-                        new Vector2(tileFactor.x, 1-tileFactor.y)
-                    };
-                    break;
-                default:
-                    texCoords=new Vector2[]
-                    {
-                        new Vector2(0, 0),
-                        new Vector2(0f, 1f),
-                        new Vector2(1f, 1f),
-                        new Vector2(1f, 0f)
-                    };
-                    break;
 
-            }
-            
-            // Largely this is the the same as Graphic original, but with extra UV Channels settings
+                
+            // Scale mode only relevant if there is an assigned sprite 
+           if (sprite == null)
+           {
+                texCoords=new Vector2[]
+                {
+                    new Vector2(0, 0),
+                    new Vector2(0, 1),
+                    new Vector2(1, 1),
+                    new Vector2(1, 0)
+                };
+           }
+           else
+           {
+
+               switch (m_ImageScaleMode)
+               {
+                   case ImageScaleMode.Stretch:
+                       // Crop
+                       texCoords = new Vector2[]
+                       {
+                           new Vector2(m_ImageTransform[0].z, 1.0f - m_ImageTransform[1].z - m_ImageTransform[1].y),
+                           new Vector2(m_ImageTransform[0].z, 1.0f - m_ImageTransform[1].z),
+                           new Vector2(m_ImageTransform[0].z + m_ImageTransform[0].x, 1.0f - m_ImageTransform[1].z),
+                           new Vector2(m_ImageTransform[0].z + m_ImageTransform[0].x,
+                               1.0f - m_ImageTransform[1].z - m_ImageTransform[1].y),
+                       };
+                       break;
+                   case ImageScaleMode.Tile:
+                       var renderWidth = sprite.rect.width * m_ImageScaleFactor;
+                       var renderHeight = sprite.rect.height * m_ImageScaleFactor;
+                       var tileFactor = new Vector2(r.width / renderWidth, r.height / renderHeight);
+                       texCoords = new Vector2[]
+                       {
+                           new Vector2(0, 1 - tileFactor.y),
+                           new Vector2(0f, 1),
+                           new Vector2(tileFactor.x, 1),
+                           new Vector2(tileFactor.x, 1 - tileFactor.y)
+                       };
+                       break;
+                   case ImageScaleMode.Fill:
+                       // Fill adjusts UVs so that shortest side fits. We use the shortest ratio of sprite size
+                       // to rect size to determine which axis drives fill size
+                       var ratioWidth = sprite.rect.width / r.width;
+                       var ratioHeight = sprite.rect.height / r.height;
+                       var fillHorizontal = ratioWidth < ratioHeight;
+                       
+                       if (fillHorizontal)
+                       {
+                           // Calculate the ideal width to calculate ratio with actual size and vOffset
+                           var idealWidth = r.width * (sprite.rect.height / sprite.rect.width);
+                           var vOffset=0.5f*(r.height/idealWidth);
+                           texCoords = new Vector2[]
+                           {
+                               new Vector2(0, 0.5f - vOffset),
+                               new Vector2(0, 0.5f + vOffset),
+                               new Vector2(1, 0.5f + vOffset),
+                               new Vector2(1, 0.5f - vOffset)
+                           };
+                       }
+                       else
+                       {
+                           // Calculate the ideal height to calculate ratio with actual size and uOffset
+                           var idealHeight = r.height * (sprite.rect.width / sprite.rect.height);
+                           var uOffset=0.5f*(r.width/idealHeight);
+                           texCoords = new Vector2[]
+                           {
+                               new Vector2(0.5f - uOffset, 0),
+                               new Vector2(0.5f - uOffset, 1),
+                               new Vector2(0.5f + uOffset, 1),
+                               new Vector2(0.5f + uOffset, 0)
+                           };
+                       }
+                       break;
+                   default:
+                       texCoords = new Vector2[]
+                       {
+                           new Vector2(0, 0),
+                           new Vector2(0f, 1f),
+                           new Vector2(1f, 1f),
+                           new Vector2(1f, 0f)
+                       };
+                       break;
+
+               }
+           }
+
+           // Largely this is the the same as Graphic original, but with extra UV Channels settings
             Color32 color32 = color;
             vh.Clear();
             // Order is TL, BL, BR, TR
