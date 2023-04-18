@@ -2,6 +2,7 @@
 using TMPro;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityFigmaBridge.Editor.FigmaApi;
 using UnityFigmaBridge.Editor.Fonts;
 using UnityFigmaBridge.Editor.Utils;
@@ -149,6 +150,33 @@ namespace UnityFigmaBridge.Editor.Nodes
                             hasShadowEffect = true;
                         }
                     }
+                    
+                    // Handle text auto resize
+                    if (node.style.textAutoResize != TypeStyle.TextAutoResize.NONE)
+                    {
+                        var contentSizeFitter = UnityUiUtils.GetOrAddComponent<ContentSizeFitter>(nodeGameObject);
+                        
+                        switch (node.style.textAutoResize)
+                        {
+                            case TypeStyle.TextAutoResize.NONE:
+                                contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+                                contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+                                break;
+                            case TypeStyle.TextAutoResize.HEIGHT:
+                                contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+                                contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                                break;
+                            case TypeStyle.TextAutoResize.WIDTH_AND_HEIGHT:
+                                contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                                contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                                break;
+                            case TypeStyle.TextAutoResize.TRUNCATE:
+                                contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+                                contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+                                break;
+                        }
+                    }
+                    
                     // If no material variation, ignore
                     if (!hasShadowEffect && node.strokes.Length == 0) return;
                     
@@ -170,6 +198,9 @@ namespace UnityFigmaBridge.Editor.Nodes
                     var effectMaterialPreset = FontManager.GetEffectMaterialPreset(matchingFontMapping,
                         hasShadowEffect, shadowColor, shadowDistance, node.strokes.Length>0, outlineColor, outlineWidth);
                     text.fontMaterial = effectMaterialPreset;
+
+                    
+                    
                     break;
                 case NodeType.SLICE:
                     break;

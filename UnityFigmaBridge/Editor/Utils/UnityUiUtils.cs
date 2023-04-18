@@ -29,5 +29,17 @@ namespace UnityFigmaBridge.Editor.Utils
             destination.sizeDelta = source.sizeDelta;
             destination.localRotation = source.localRotation;
         }
+
+        /// <summary>
+        /// Retrieves and returns the specified component if it already exists. If it does not exist, it is added and returned
+        /// </summary>
+        /// <param name="T"></param>
+        /// <param name="gameObject"></param>
+        public static T GetOrAddComponent<T>(GameObject gameObject) where T : UnityEngine.Component
+        {
+            T component = gameObject.GetComponent<T>();
+            if (component == null) component = gameObject.AddComponent<T>() as T;
+            return component;
+        }
     }
 }

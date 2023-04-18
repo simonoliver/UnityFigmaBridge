@@ -44,6 +44,8 @@ namespace UnityFigmaBridge.Editor.Nodes
             if (constraintsSourceNode.constraints!=null) ApplyFigmaConstraints(targetRectTransform, constraintsSourceNode, figmaParentNode);
             
             // We'll also use these properties to apply pivot after, where required
+            // We disable center pivot for Text nodes, as this creates behaviour different from Figma when autosizing
+            if (figmaNode.type==NodeType.TEXT) centerPivot = false;
             if (centerPivot) SetPivot(targetRectTransform, new Vector2(0.5f, 0.5f));
         }
     

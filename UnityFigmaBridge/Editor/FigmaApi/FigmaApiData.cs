@@ -952,13 +952,14 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         {
             NONE,
             HEIGHT,
-            WIDTH_AND_HEIGHT
+            WIDTH_AND_HEIGHT,
+            TRUNCATE
         }
 
         /// <summary>
         /// Dimensions along which text will auto resize, default is that the text does not auto-resize.
         /// </summary>
-        public TextAutoResize textAutoResizeString = TextAutoResize.NONE;
+        public TextAutoResize textAutoResize = TextAutoResize.NONE;
 
         public enum TextAlignHorizontal
         {
