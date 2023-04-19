@@ -3,7 +3,7 @@
 ![Unity Figma Bridge](/Docs/UnityFigmaBridgeBanner.png)
 
 **[WebGL Demo Here](https://simonoliver.itch.io/unity-figma-bridge)** - created with a 1-Click Import
-from [this Figma file](https://www.figma.com/file/DIhmjD8NcAF2UHf69y53fn/Figma-Unity-Bridge-Example?node-id=3%3A1288&t=FojAQsm2ZbnOJL9r-1).
+from [this Figma file](https://www.figma.com/community/file/1230440663355118588/Figma-Unity-Bridge-Example).
 
 **[Example Unity Project Here](https://github.com/simonoliver/UnityFigmaBridgeExample)** - showing what gets generated
 by the tool
