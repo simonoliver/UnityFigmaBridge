@@ -204,7 +204,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             switch (figmaNode.type)
             {
                 // If the parent is either a canvas or section, treat as a flowScreen and create a prefab
-                case NodeType.FRAME when parentFigmaNode is { type: NodeType.CANVAS or NodeType.SECTION }:
+                case NodeType.FRAME:
                     if (figmaNode.IsScreenNode(parentFigmaNode))
                     {
                         SaveFigmaScreenAsPrefab(figmaNode, parentFigmaNode, nodeRectTransform, figmaImportProcessData);
