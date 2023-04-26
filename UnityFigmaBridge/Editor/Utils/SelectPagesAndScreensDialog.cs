@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using UnityEditor;
 using UnityEngine;
-using UnityFigmaBridge.Editor.FigmaApi;
 
 namespace UnityFigmaBridge.Editor.Utils
 {
@@ -19,6 +16,7 @@ namespace UnityFigmaBridge.Editor.Utils
         static Vector2 s_ScreenScrollPos;
         Action<IReadOnlyList<LineData>,IReadOnlyList<LineData>> onOk;
         Action onCancel;
+        bool IsClickdOk;
 
         public sealed class LineData
         {
@@ -73,7 +71,6 @@ namespace UnityFigmaBridge.Editor.Utils
             }
         }
 
-        private bool test;
         void OnGUI()
         {
             minSize = new Vector2(800, 600);
@@ -86,8 +83,7 @@ namespace UnityFigmaBridge.Editor.Utils
             using (new EditorGUILayout.HorizontalScope("Box")) {
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("OK", GUILayout.Width(80))) {
-                    Debug.Log("EditorApplication.delayCall 111111");
-                    test = true;
+                    IsClickdOk = true;
                 }
 
                 if (GUILayout.Button("Cancel", GUILayout.Width(80))) {
@@ -96,13 +92,12 @@ namespace UnityFigmaBridge.Editor.Utils
                 }
             }
 
-            if (test)
+            if (IsClickdOk)
             {
                 EditorApplication.delayCall += () => {
-                    Debug.Log("EditorApplication.delayCall 22222");
                     onOk?.Invoke(s_PageDataList, s_ScreenDataList);
                 };
-                test = false;
+                IsClickdOk = false;
                 Close();
             }
         }
