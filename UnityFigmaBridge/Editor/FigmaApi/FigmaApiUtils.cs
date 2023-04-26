@@ -164,6 +164,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             webRequest.SetRequestHeader("X-Figma-Token", accessToken);
 
             await webRequest.SendWebRequest();
+
             if (webRequest.result is UnityWebRequest.Result.ProtocolError or UnityWebRequest.Result.ConnectionError)
             {
                 throw new Exception($"Error downloading FIGMA Image Fill Data: {webRequest.error} url - {imageFillUrl}");
