@@ -419,5 +419,49 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             return allFlowStartingPoints;
         }
         
+        /// <summary>
+        /// Lists all Page Names in a given Figma file
+        /// </summary>
+        /// <param name="sourceFile"></param>
+        /// <returns></returns>
+        public static List<string> GetPageNames(FigmaFile sourceFile)
+        {
+            var pageNames = new List<string>();
+            foreach (var canvasNode in sourceFile.document.children)
+            {
+                pageNames.Add(canvasNode.name);
+            }
+            return pageNames;
+        }
+
+        static void SearchScreenNodes(Node node, Node parentNode, List<string> screenNames)
+        {
+            if (node.IsScreenNode(parentNode))
+            {
+                screenNames.Add(node.name);
+            }
+
+            if (node.children == null) return;
+
+            foreach (var childNode in node.children)
+            {
+                SearchScreenNodes(childNode, node, screenNames);
+            }
+        }
+
+        /// <summary>
+        /// Lists all Screen Names in a given Figma file
+        /// </summary>
+        /// <param name="sourceFile"></param>
+        /// <returns></returns>
+        public static List<string> GetScreenNames(FigmaFile sourceFile)
+        {
+            var screenNames = new List<string>();
+            foreach (var node in sourceFile.document.children)
+            {
+                SearchScreenNodes(node, null, screenNames);
+            }
+            return screenNames;
+        }
     }
 }

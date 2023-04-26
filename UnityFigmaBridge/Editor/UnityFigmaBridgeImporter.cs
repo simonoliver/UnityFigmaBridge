@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -47,15 +50,66 @@ namespace UnityFigmaBridge.Editor
         /// The flowScreen controller to mange prototype functionality
         /// </summary>
         private static PrototypeFlowController s_PrototypeFlowController;
-        
+
+        static async void SyncAsync()
+        {
+            var requirementsMet = CheckRequirements();
+            if (!requirementsMet) return;
+
+            var figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
+            if (figmaFile == null) return;
+
+            var pageNames = FigmaDataUtils.GetPageNames(figmaFile);
+            var screenNames = FigmaDataUtils.GetScreenNames(figmaFile);
+
+            ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNames, screenNames);
+        }
+
         [MenuItem("Figma Bridge/Sync Document")]
         static void Sync()
         {
+            SyncAsync();
+        }
+
+        static async void SelectSyncAsync()
+        {
             var requirementsMet = CheckRequirements();
-            if (requirementsMet)
-            {
-                ImportDocument(s_UnityFigmaBridgeSettings.FileId);
-            }
+            if (!requirementsMet) return;
+
+            var figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
+            if (figmaFile == null) return;
+
+            var pageNames = FigmaDataUtils.GetPageNames(figmaFile);
+            var screenNames = FigmaDataUtils.GetScreenNames(figmaFile);
+
+            SelectPagesAndScreensDialog.Show
+            (
+                pageNames:pageNames,
+                screenNames:screenNames,
+                onOk: (pageDatalist, screenDataList) =>
+                {
+                    var downloadPageNameList = pageDatalist.Where(d => d.IsChecked).Select(d => d.Name).ToList();
+                    var downloadScreenNameList = screenDataList.Where(d => d.IsChecked).Select(d => d.Name).ToList();
+
+                    if (downloadPageNameList.Count <= 0 && downloadScreenNameList.Count <= 0)
+                    {
+                        Debug.Log("No pages or screens selected.");
+                        return;
+                    }
+
+                    ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, downloadPageNameList, downloadScreenNameList);
+                },
+                onCancel: () =>
+                {
+                    EditorUtility.ClearProgressBar();
+                }
+            );
+        }
+
+        [MenuItem("Figma Bridge/Select Sync Document")]
+        static void SelectSync()
+        {
+            SelectSyncAsync();
         }
         
         /// <summary>
@@ -198,6 +252,7 @@ namespace UnityFigmaBridge.Editor
                 s_PersonalAccessToken = newAccessToken;
                 Debug.Log( $"New access token set {s_PersonalAccessToken}");
                 PlayerPrefs.SetString(FIGMA_PERSONAL_ACCESS_TOKEN_PREF_KEY,s_PersonalAccessToken);
+                PlayerPrefs.Save();
                 return true;
             }
 
@@ -239,29 +294,35 @@ namespace UnityFigmaBridge.Editor
             EditorUtility.DisplayDialog("Unity Figma Bridge Error",message,"Ok");
             Debug.LogWarning($"{message}\n {error}\n");
         }
-        
-        private static async void ImportDocument(string fileId)
-        {
 
-            // Ensure we have all required directories
-            FigmaPaths.CreateRequiredDirectories();
-            
+        private static async Task<FigmaFile> DownloadFigmaDocument(string fileId)
+        {
             // Download figma document
-            FigmaFile figmaFile;
             EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading file", 0);
             try
             {
-               var figmaTask = FigmaApiUtils.GetFigmaDocument(fileId, s_PersonalAccessToken, true);
-               await figmaTask;
-               figmaFile = figmaTask.Result;
+                var figmaTask = FigmaApiUtils.GetFigmaDocument(fileId, s_PersonalAccessToken, true);
+                await figmaTask;
+                return figmaTask.Result;
             }
             catch (Exception e)
             {
-                EditorUtility.ClearProgressBar();
-                ReportError("Error downloading Figma document - Check your personal access key and document url are correct", e.ToString());
-                return;
+                ReportError(
+                    "Error downloading Figma document - Check your personal access key and document url are correct",
+                    e.ToString());
             }
-            
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+            return null;
+        }
+
+        public static async void ImportDocument(string fileId, FigmaFile figmaFile, List<string> downloadPageNameList, List<string> downloadScreenNameList)
+        {
+
+            // Ensure we have all required directories
+            FigmaPaths.CreateRequiredDirectories(downloadPageNameList, downloadScreenNameList);
             
             // Next build a list of all externally referenced components not included in the document (eg
             // from external libraries) and download
@@ -384,7 +445,7 @@ namespace UnityFigmaBridge.Editor
 
             try
             {
-                FigmaAssetGenerator.BuildFigmaFile(s_SceneCanvas, figmaBridgeProcessData);
+                FigmaAssetGenerator.BuildFigmaFile(s_SceneCanvas, figmaBridgeProcessData, downloadPageNameList, downloadScreenNameList);
             }
             catch (Exception e)
             {

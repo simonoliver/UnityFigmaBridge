@@ -439,6 +439,17 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         
         // FOR ELLIPSE
         public ArcData arcData;
+
+        /// <summary>
+        /// Check for Node is Screen Node
+        /// </summary>
+        public bool IsScreenNode(Node parentNode)
+        {
+            if (type != NodeType.FRAME) return false;
+            if (parentNode == null) return false;
+            if (parentNode is { type: NodeType.CANVAS or NodeType.SECTION }) return true;
+            return false;
+        }
     }
     
     public class Color

@@ -107,7 +107,7 @@ namespace UnityFigmaBridge.Editor.Utils
             return System.Text.RegularExpressions.Regex.Replace(name, invalidRegStr, "_");
         }
 
-        public static void CreateRequiredDirectories()
+        public static void CreateRequiredDirectories(List<string> downloadPageNameList, List<string> downloadScreenNameList)
         {
             
             //  Create directory for pages if required 
@@ -118,6 +118,7 @@ namespace UnityFigmaBridge.Editor.Utils
             // Remove existing prefabs for pagwes
             foreach (var file in new DirectoryInfo(FigmaPagePrefabFolder).GetFiles())
             {
+                if (!downloadPageNameList.Contains(file.Name)) continue;
                 file.Delete(); 
             }
             
@@ -129,6 +130,7 @@ namespace UnityFigmaBridge.Editor.Utils
             // Remove existing flowScreen prefabs
             foreach (FileInfo file in  new DirectoryInfo(FigmaScreenPrefabFolder).GetFiles())
             {
+                if (!downloadScreenNameList.Contains(file.Name)) continue;
                 file.Delete(); 
             }
             
