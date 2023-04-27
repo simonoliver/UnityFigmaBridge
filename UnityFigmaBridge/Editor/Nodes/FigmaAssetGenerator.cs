@@ -29,8 +29,6 @@ namespace UnityFigmaBridge.Editor.Nodes
             var createdPages = new List<(Node,GameObject)>();
             foreach (var figmaCanvasNode in figmaImportProcessData.SourceFile.document.children)
             {
-                if (!downloadPageNameList.Contains(figmaCanvasNode.name)) continue;
-
                 var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData, downloadScreenNameList);
                 createdPages.Add((figmaCanvasNode,pageGameObject));
             }
@@ -38,6 +36,8 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Save prefab for each page
             for (var i = 0; i < createdPages.Count; i++)
             {
+                if (!downloadPageNameList.Contains(createdPages[i].Item1.name)) continue;
+
                 PrefabUtility.SaveAsPrefabAssetAndConnect(createdPages[i].Item2,
                     FigmaPaths.GetPathForPagePrefab(createdPages[i].Item1),InteractionMode.UserAction);
             }
