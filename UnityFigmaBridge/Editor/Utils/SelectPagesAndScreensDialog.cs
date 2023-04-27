@@ -14,9 +14,9 @@ namespace UnityFigmaBridge.Editor.Utils
         static readonly List<LineData> s_ScreenDataList = new ();
         static Vector2 s_PageScrollPos;
         static Vector2 s_ScreenScrollPos;
-        Action<IReadOnlyList<LineData>,IReadOnlyList<LineData>> onOk;
-        Action onCancel;
-        bool IsClickdOk;
+        Action<IReadOnlyList<LineData>,IReadOnlyList<LineData>> onOKButton;
+        Action onCancelButton;
+        bool isClickdOk;
 
         public sealed class LineData
         {
@@ -32,12 +32,12 @@ namespace UnityFigmaBridge.Editor.Utils
 
         void RegisterOk(Action<IReadOnlyList<LineData>, IReadOnlyList<LineData>> onOk)
         {
-            this.onOk += onOk;
+            onOKButton += onOk;
         }
 
         void RegisterCancel(Action onCancel)
         {
-            this.onCancel += onCancel;
+            onCancelButton += onCancel;
         }
 
         #region OnGUI()
@@ -75,29 +75,29 @@ namespace UnityFigmaBridge.Editor.Utils
         {
             minSize = new Vector2(800, 600);
             using (new EditorGUILayout.HorizontalScope()) {
-                ListCore("Pages", s_PageDataList, ref s_PageScrollPos);
+                ListCore("Select Download Pages", s_PageDataList, ref s_PageScrollPos);
                 GUILayout.Space(5);
-                ListCore("Screens", s_ScreenDataList, ref s_ScreenScrollPos);
+                ListCore("Select Download Screens", s_ScreenDataList, ref s_ScreenScrollPos);
             }
 
             using (new EditorGUILayout.HorizontalScope("Box")) {
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("OK", GUILayout.Width(80))) {
-                    IsClickdOk = true;
+                    isClickdOk = true;
                 }
 
                 if (GUILayout.Button("Cancel", GUILayout.Width(80))) {
-                    onCancel?.Invoke();
+                    onCancelButton?.Invoke();
                     Close();
                 }
             }
 
-            if (IsClickdOk)
+            if (isClickdOk)
             {
                 EditorApplication.delayCall += () => {
-                    onOk?.Invoke(s_PageDataList, s_ScreenDataList);
+                    onOKButton?.Invoke(s_PageDataList, s_ScreenDataList);
                 };
-                IsClickdOk = false;
+                isClickdOk = false;
                 Close();
             }
         }
