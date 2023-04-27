@@ -129,7 +129,7 @@ namespace UnityFigmaBridge.Editor.Utils
             var window = CreateInstance<SelectPagesAndScreensDialog>();
             window.RegisterOk(onOk);
             window.RegisterCancel(onCancel);
-            window.ShowModal();
+            window.ShowModalUtility();
         }
         #endregion Show()
     }
