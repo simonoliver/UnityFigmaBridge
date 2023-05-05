@@ -121,8 +121,12 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Add on a figmaNode to store the reference to the FIGMA figmaNode id
             nodeGameObject.AddComponent<FigmaNodeObject>().NodeId=figmaNode.id;
 
-            // If this is a Figma mask object we'll add a mask component 
-            if (figmaNode.isMask) nodeGameObject.AddComponent<Mask>();
+            // If this is a Figma mask object we'll add a mask component (but dont render) 
+            if (figmaNode.isMask)
+            {
+                var mask=nodeGameObject.AddComponent<Mask>();
+                mask.showMaskGraphic = false;
+            }
             
             // For component instances, we want to check if there is an existing definition
             // If so, we wont create the full node, but mark it with a "component node marker" component

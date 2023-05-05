@@ -30,7 +30,7 @@ Please note - currently only supports **Unity 2021.3** and later!
 * Automatically generates required font assets (including downloading missing fonts from Google Fonts)
 * Binds Unity MonoBehaviours and fields to Figma objects
 * Server side rendering of vector shapes
-* Auto layout support
+* Auto layout support (Experimental - may cause issues on complex layouts)
 * Scrolling frames (using overflow scrolling settings)
 
 ## Setting up
@@ -125,6 +125,7 @@ mentioned in *Binding Behaviours*
 ## Auto layout
 
 Vertical or Horizontal layout groups will be added to mirror the auto layout settings of a given object in the Figma document.
+Please note this is disabled by default (enable in settings) as it can cause issues with complex layouts.
 
 ## Binding behaviours
 

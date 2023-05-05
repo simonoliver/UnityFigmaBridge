@@ -99,7 +99,6 @@ namespace UnityFigmaBridge.Editor.Components
         /// <param name="figmaImportProcessData"></param>
         private static void InstantiateComponentPrefabs(GameObject sourcePrefab, FigmaImportProcessData figmaImportProcessData)
         {
-            Debug.Log($"Processing Component prefabs for {sourcePrefab.name}");
             var assetPath = AssetDatabase.GetAssetPath(sourcePrefab);
             var prefabContents = PrefabUtility.LoadPrefabContents(assetPath);
             // Get all placeholders within this prefab - these will be replaced
@@ -113,7 +112,7 @@ namespace UnityFigmaBridge.Editor.Components
                 if (prefabInstanceRoot==null) targetPlaceHolderComponents.Add(t);
                 else
                 {
-                    Debug.Log($"Prefab instance root found for object {t.gameObject.name}, skipping");
+                    // Debug.Log($"Prefab instance root found for object {t.gameObject.name}, skipping");
                 }
             }
 

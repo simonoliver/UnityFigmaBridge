@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 using UnityFigmaBridge.Editor.FigmaApi;
 using UnityFigmaBridge.Editor.Utils;
@@ -20,6 +21,7 @@ namespace UnityFigmaBridge.Editor.Nodes
         public static void ApplyLayoutPropertiesForNode( GameObject nodeGameObject,Node node,
             FigmaImportProcessData figmaImportProcessData,out GameObject scrollContentGameObject)
         {
+            
             // Depending on whether scrolling is applied, we may want to add layout to this object or to the content
             // holder
             
@@ -67,12 +69,12 @@ namespace UnityFigmaBridge.Editor.Nodes
             }
             
             
-            // Ignore if layout mode is NONE
-            if (node.layoutMode == Node.LayoutMode.NONE) return;
+            // Ignore if layout mode is NONE or layout disabled
+            if (node.layoutMode == Node.LayoutMode.NONE || !figmaImportProcessData.Settings.EnableAutoLayout) return;
             
             // Remove an existing layout group if it exists
             var existingLayoutGroup = targetLayoutObject.GetComponent<HorizontalOrVerticalLayoutGroup>();
-            if (existingLayoutGroup!=null) Object.DestroyImmediate(existingLayoutGroup);
+            if (existingLayoutGroup!=null) UnityEngine.Object.DestroyImmediate(existingLayoutGroup);
             
             HorizontalOrVerticalLayoutGroup layoutGroup = null;
             
@@ -80,15 +82,85 @@ namespace UnityFigmaBridge.Editor.Nodes
             {
                 case Node.LayoutMode.VERTICAL:
                     layoutGroup= UnityUiUtils.GetOrAddComponent<VerticalLayoutGroup>(targetLayoutObject);
+                    layoutGroup.childForceExpandWidth= layoutGroup.childForceExpandHeight = false;
+                    // Setup alignment according to Figma layout. Primary is Vertical
+                    switch (node.primaryAxisAlignItems)
+                    {
+                        // Upper Alignment
+                        case Node.PrimaryAxisAlignItems.MIN:
+                            layoutGroup.childAlignment = node.counterAxisAlignItems switch
+                            {
+                                Node.CounterAxisAlignItems.MIN => TextAnchor.UpperLeft,
+                                Node.CounterAxisAlignItems.CENTER => TextAnchor.UpperCenter,
+                                Node.CounterAxisAlignItems.MAX => TextAnchor.UpperRight,
+                                _ => layoutGroup.childAlignment
+                            };
+                            break;
+                        // Center alignment
+                        case Node.PrimaryAxisAlignItems.CENTER:
+                            layoutGroup.childAlignment = node.counterAxisAlignItems switch
+                            {
+                                Node.CounterAxisAlignItems.MIN => TextAnchor.MiddleLeft,
+                                Node.CounterAxisAlignItems.CENTER => TextAnchor.MiddleCenter,
+                                Node.CounterAxisAlignItems.MAX => TextAnchor.MiddleRight,
+                                _ => layoutGroup.childAlignment
+                            };
+                            break;
+                        // Lower alignment
+                        case Node.PrimaryAxisAlignItems.MAX:
+                            layoutGroup.childAlignment = node.counterAxisAlignItems switch
+                            {
+                                Node.CounterAxisAlignItems.MIN => TextAnchor.LowerLeft,
+                                Node.CounterAxisAlignItems.CENTER => TextAnchor.LowerCenter,
+                                Node.CounterAxisAlignItems.MAX => TextAnchor.LowerRight,
+                                _ => layoutGroup.childAlignment
+                            };
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+
                     break;
                 case Node.LayoutMode.HORIZONTAL:
                     layoutGroup= UnityUiUtils.GetOrAddComponent<HorizontalLayoutGroup>(targetLayoutObject);
+                    layoutGroup.childForceExpandWidth= layoutGroup.childForceExpandHeight = false;
+                    // Setup alignment according to Figma layout. Primary is Horizontal
+                    layoutGroup.childAlignment = node.primaryAxisAlignItems switch
+                    {
+                        // Left Alignment
+                        Node.PrimaryAxisAlignItems.MIN => node.counterAxisAlignItems switch
+                        {
+                            Node.CounterAxisAlignItems.MIN => TextAnchor.UpperLeft,
+                            Node.CounterAxisAlignItems.CENTER => TextAnchor.MiddleLeft,
+                            Node.CounterAxisAlignItems.MAX => TextAnchor.LowerLeft,
+                            _ => layoutGroup.childAlignment
+                        },
+                        // Center alignment
+                        Node.PrimaryAxisAlignItems.CENTER => node.counterAxisAlignItems switch
+                        {
+                            Node.CounterAxisAlignItems.MIN => TextAnchor.UpperCenter,
+                            Node.CounterAxisAlignItems.CENTER => TextAnchor.MiddleCenter,
+                            Node.CounterAxisAlignItems.MAX => TextAnchor.LowerCenter,
+                            _ => layoutGroup.childAlignment
+                        },
+                        // Right alignment
+                        Node.PrimaryAxisAlignItems.MAX => node.counterAxisAlignItems switch
+                        {
+                            Node.CounterAxisAlignItems.MIN => TextAnchor.UpperRight,
+                            Node.CounterAxisAlignItems.CENTER => TextAnchor.MiddleRight,
+                            Node.CounterAxisAlignItems.MAX => TextAnchor.LowerRight,
+                            _ => layoutGroup.childAlignment
+                        },
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
                     break;
             }
+
             layoutGroup.padding = new RectOffset(Mathf.RoundToInt(node.paddingLeft), Mathf.RoundToInt(node.paddingRight),
                 Mathf.RoundToInt(node.paddingTop), Mathf.RoundToInt(node.paddingBottom));
             layoutGroup.spacing = node.itemSpacing;
-            
+            layoutGroup.enabled = false;
+
         }
     }
 }
