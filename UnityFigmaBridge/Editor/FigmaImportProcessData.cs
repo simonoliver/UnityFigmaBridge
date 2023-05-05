@@ -41,6 +41,11 @@ namespace UnityFigmaBridge.Editor
         /// this is set when the figma unity UI document is generated
         /// </summary>
         public PrototypeFlowController PrototypeFlowController;
+
+        /// <summary>
+        /// Generated page prefabs
+        /// </summary>
+        public List<GameObject> PagePrefabs = new();
         
         /// <summary>
         /// Generated screens

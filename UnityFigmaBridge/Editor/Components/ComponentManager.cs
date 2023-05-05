@@ -31,6 +31,11 @@ namespace UnityFigmaBridge.Editor.Components
             {
                 RemoveTemporaryNodeComponents(framePrefab);
             }
+            // Remove from pages
+            foreach (var pagePrefab in figmaImportProcessData.PagePrefabs.Where(pagePrefab => pagePrefab!=null))
+            {
+                RemoveTemporaryNodeComponents(pagePrefab);
+            }
        }
 
         /// <summary>
@@ -81,6 +86,10 @@ namespace UnityFigmaBridge.Editor.Components
             // Instantiate components within screens 
             foreach (var framePrefab in figmaImportProcessData.ScreenPrefabs.Where(framePrefab => framePrefab!=null))
                 InstantiateComponentPrefabs(framePrefab, figmaImportProcessData);
+            
+            // Instantiate components within pages 
+            foreach (var pagePrefab in figmaImportProcessData.ScreenPrefabs.Where(pagePrefab => pagePrefab!=null))
+                InstantiateComponentPrefabs(pagePrefab, figmaImportProcessData);
         }
         
         /// <summary>
@@ -90,13 +99,28 @@ namespace UnityFigmaBridge.Editor.Components
         /// <param name="figmaImportProcessData"></param>
         private static void InstantiateComponentPrefabs(GameObject sourcePrefab, FigmaImportProcessData figmaImportProcessData)
         {
+            Debug.Log($"Processing Component prefabs for {sourcePrefab.name}");
             var assetPath = AssetDatabase.GetAssetPath(sourcePrefab);
             var prefabContents = PrefabUtility.LoadPrefabContents(assetPath);
             // Get all placeholders within this prefab - these will be replaced
             var allPlaceholderComponents = prefabContents.GetComponentsInChildren<FigmaComponentNodeMarker>();
+            
+            // Filter out any that are replacements in prefab instances (we want to skip these)
+            var targetPlaceHolderComponents = new List<FigmaComponentNodeMarker>();
+            foreach (var t in allPlaceholderComponents)
+            {
+                var prefabInstanceRoot=PrefabUtility.GetNearestPrefabInstanceRoot(t.gameObject);
+                if (prefabInstanceRoot==null) targetPlaceHolderComponents.Add(t);
+                else
+                {
+                    Debug.Log($"Prefab instance root found for object {t.gameObject.name}, skipping");
+                }
+            }
+
+
             // Track a list of placed and modified components, to allow effective saving
             var modifiedPrefabInstances = new List<GameObject>();
-            foreach (var placeholder in allPlaceholderComponents)
+            foreach (var placeholder in targetPlaceHolderComponents)
             {
                 var sourceComponentPrefab = figmaImportProcessData.ComponentData.GetComponentPrefab(placeholder.ComponentId);
 

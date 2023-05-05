@@ -32,12 +32,13 @@ namespace UnityFigmaBridge.Editor.Nodes
                 var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData);
                 createdPages.Add((figmaCanvasNode,pageGameObject));
             }
-
+            
             // Save prefab for each page
             for (var i = 0; i < createdPages.Count; i++)
             {
-                PrefabUtility.SaveAsPrefabAssetAndConnect(createdPages[i].Item2,
+                var pagePrefab=PrefabUtility.SaveAsPrefabAssetAndConnect(createdPages[i].Item2,
                     FigmaPaths.GetPathForPagePrefab(createdPages[i].Item1),InteractionMode.UserAction);
+                figmaImportProcessData.PagePrefabs.Add(pagePrefab);
             }
             
             // Destroy all page objects
@@ -45,6 +46,15 @@ namespace UnityFigmaBridge.Editor.Nodes
             {
                 Object.DestroyImmediate(createdPage.Item2);
             }
+            
+            // Instantiate all components
+            ComponentManager.InstantiateAllComponentPrefabs(figmaImportProcessData);
+
+            // Remove all temporary components that were created along the way
+            ComponentManager.RemoveAllTemporaryNodeComponents(figmaImportProcessData);
+            
+            // At the very end, we want to apply figmaNode behaviour where required
+            BehaviourBindingManager.BindBehaviours(figmaImportProcessData);
         }
 
         
@@ -73,15 +83,6 @@ namespace UnityFigmaBridge.Editor.Nodes
                     BuildFigmaNode(childNode, pageTransform, pageNode, 0, figmaImportProcessData);
             }
 
-            // Instantiate all components
-            ComponentManager.InstantiateAllComponentPrefabs(figmaImportProcessData);
-
-            // Remove all temporary components that were created along the way
-            ComponentManager.RemoveAllTemporaryNodeComponents(figmaImportProcessData);
-            
-            // At the very end, we want to apply figmaNode behaviour where required
-            BehaviourBindingManager.BindBehaviours(figmaImportProcessData);
-            
             return pageGameObject;
         }
 
