@@ -420,48 +420,48 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         }
         
         /// <summary>
-        /// Lists all Page Names in a given Figma file
+        /// Lists all Page Nodes in a given Figma file
         /// </summary>
         /// <param name="sourceFile"></param>
         /// <returns></returns>
-        public static List<string> GetPageNames(FigmaFile sourceFile)
+        public static List<Node> GetPageNodes(FigmaFile sourceFile)
         {
-            var pageNames = new List<string>();
+            var pageNodes = new List<Node>();
             foreach (var canvasNode in sourceFile.document.children)
             {
-                pageNames.Add(canvasNode.name);
+                pageNodes.Add(canvasNode);
             }
-            return pageNames;
+            return pageNodes;
         }
 
-        static void SearchScreenNodes(Node node, Node parentNode, List<string> screenNames)
+        static void SearchScreenNodes(Node node, Node parentNode, List<Node> screenNodes)
         {
             if (node.IsScreenNode(parentNode))
             {
-                screenNames.Add(node.name);
+                screenNodes.Add(node);
             }
 
             if (node.children == null) return;
 
             foreach (var childNode in node.children)
             {
-                SearchScreenNodes(childNode, node, screenNames);
+                SearchScreenNodes(childNode, node, screenNodes);
             }
         }
 
         /// <summary>
-        /// Lists all Screen Names in a given Figma file
+        /// Lists all Screen Nodes in a given Figma file
         /// </summary>
         /// <param name="sourceFile"></param>
         /// <returns></returns>
-        public static List<string> GetScreenNames(FigmaFile sourceFile)
+        public static List<Node> GetScreenNodes(FigmaFile sourceFile)
         {
-            var screenNames = new List<string>();
+            var screenNodes = new List<Node>();
             foreach (var node in sourceFile.document.children)
             {
-                SearchScreenNodes(node, null, screenNames);
+                SearchScreenNodes(node, null, screenNodes);
             }
-            return screenNames;
+            return screenNodes;
         }
     }
 }
