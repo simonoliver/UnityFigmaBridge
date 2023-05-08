@@ -59,10 +59,54 @@ namespace UnityFigmaBridge.Editor
             var figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
             if (figmaFile == null) return;
 
-            var pageNames = FigmaDataUtils.GetPageNames(figmaFile);
-            var screenNames = FigmaDataUtils.GetScreenNames(figmaFile);
+            var pageNodes = FigmaDataUtils.GetPageNodes(figmaFile);
+            var screenNodes = FigmaDataUtils.GetScreenNodes(figmaFile);
 
-            ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNames, screenNames);
+            if (s_UnityFigmaBridgeSettings.OnlyImportSelectedPages)
+            {
+                if (s_UnityFigmaBridgeSettings.PageDataList.Count != pageNodes.Count)
+                {
+                    ReportError("Error", "Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings");
+                    return;
+                }
+
+                if (s_UnityFigmaBridgeSettings.ScreenDataList.Count != screenNodes.Count)
+                {
+                    ReportError("Error", "Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings");
+                    return;
+                }
+
+                var localPageIdList = s_UnityFigmaBridgeSettings.PageDataList.Select(p => p.Id).ToList();
+                var localScreenIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Select(s => s.Id).ToList();
+                var figmaPageIdList = pageNodes.Select(p => p.id).ToList();
+                var figmaScreenIdList = screenNodes.Select(s => s.id).ToList();
+
+                if (!localPageIdList.SequenceEqual(figmaPageIdList))
+                {
+                    ReportError("Error", "Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings");
+                    return;
+                }
+
+                if (!localScreenIdList.SequenceEqual(figmaScreenIdList))
+                {
+                    ReportError("Error", "Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings");
+                    return;
+                }
+
+                var downloadPageIdList = s_UnityFigmaBridgeSettings.PageDataList.Where(p => p.IsChecked).Select(p => p.Id).ToList();
+                var downloadScreenIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Where(s => s.IsChecked).Select(s => s.Id).ToList();
+
+                if (downloadPageIdList.Count <= 0 && downloadScreenIdList.Count <= 0)
+                {
+                    ReportError("Error", "No Pages or Screens are selected for import");
+                    return;
+                }
+
+                pageNodes = pageNodes.Where(p => downloadPageIdList.Contains(p.id)).ToList();
+                screenNodes = screenNodes.Where(s => downloadScreenIdList.Contains(s.id)).ToList();
+            }
+
+            ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodes, screenNodes);
         }
 
         [MenuItem("Figma Bridge/Sync Document")]
@@ -71,52 +115,11 @@ namespace UnityFigmaBridge.Editor
             SyncAsync();
         }
 
-        static async void SelectSyncAsync()
-        {
-            var requirementsMet = CheckRequirements();
-            if (!requirementsMet) return;
-
-            var figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
-            if (figmaFile == null) return;
-
-            var pageNames = FigmaDataUtils.GetPageNames(figmaFile);
-            var screenNames = FigmaDataUtils.GetScreenNames(figmaFile);
-
-            SelectPagesAndScreensDialog.Show
-            (
-                pageNames:pageNames,
-                screenNames:screenNames,
-                onOk: (pageDatalist, screenDataList) =>
-                {
-                    var downloadPageNameList = pageDatalist.Where(d => d.IsChecked).Select(d => d.Name).ToList();
-                    var downloadScreenNameList = screenDataList.Where(d => d.IsChecked).Select(d => d.Name).ToList();
-
-                    if (downloadPageNameList.Count <= 0 && downloadScreenNameList.Count <= 0)
-                    {
-                        Debug.Log("No pages or screens selected.");
-                        return;
-                    }
-
-                    ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, downloadPageNameList, downloadScreenNameList);
-                },
-                onCancel: () =>
-                {
-                    EditorUtility.ClearProgressBar();
-                }
-            );
-        }
-
-        [MenuItem("Figma Bridge/Select Sync Document")]
-        static void SelectSync()
-        {
-            SelectSyncAsync();
-        }
-        
         /// <summary>
         /// Check to make sure all requirements are met before syncing
         /// </summary>
         /// <returns></returns>
-        private static bool CheckRequirements() {
+        public static bool CheckRequirements() {
             
             // Find the settings asset if it exists
             if (s_UnityFigmaBridgeSettings == null)
@@ -295,7 +298,7 @@ namespace UnityFigmaBridge.Editor
             Debug.LogWarning($"{message}\n {error}\n");
         }
 
-        private static async Task<FigmaFile> DownloadFigmaDocument(string fileId)
+        public static async Task<FigmaFile> DownloadFigmaDocument(string fileId)
         {
             // Download figma document
             EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading file", 0);
@@ -318,11 +321,11 @@ namespace UnityFigmaBridge.Editor
             return null;
         }
 
-        public static async void ImportDocument(string fileId, FigmaFile figmaFile, List<string> downloadPageNameList, List<string> downloadScreenNameList)
+        public static async void ImportDocument(string fileId, FigmaFile figmaFile, List<Node> downloadPageNodeList, List<Node> downloadScreenNodeList)
         {
 
             // Ensure we have all required directories
-            FigmaPaths.CreateRequiredDirectories(downloadPageNameList, downloadScreenNameList);
+            FigmaPaths.CreateRequiredDirectories(downloadPageNodeList, downloadScreenNodeList);
             
             // Next build a list of all externally referenced components not included in the document (eg
             // from external libraries) and download
@@ -445,7 +448,7 @@ namespace UnityFigmaBridge.Editor
 
             try
             {
-                FigmaAssetGenerator.BuildFigmaFile(s_SceneCanvas, figmaBridgeProcessData, downloadPageNameList, downloadScreenNameList);
+                FigmaAssetGenerator.BuildFigmaFile(s_SceneCanvas, figmaBridgeProcessData, downloadPageNodeList, downloadScreenNodeList);
             }
             catch (Exception e)
             {

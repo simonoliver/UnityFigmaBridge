@@ -23,20 +23,21 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// </summary>
         /// <param name="rootCanvas">Root canvas for generation</param>
         /// <param name="figmaImportProcessData"></param>
-        public static void BuildFigmaFile(Canvas rootCanvas, FigmaImportProcessData figmaImportProcessData, List<string> downloadPageNameList, List<string> downloadScreenNameList)
+        public static void BuildFigmaFile(Canvas rootCanvas, FigmaImportProcessData figmaImportProcessData, List<Node> downloadPageNodeList, List<Node> downloadScreenNodeList)
         {
             // Cycle through all pages and create
             var createdPages = new List<(Node,GameObject)>();
             foreach (var figmaCanvasNode in figmaImportProcessData.SourceFile.document.children)
             {
-                var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData, downloadScreenNameList);
+                var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData, downloadScreenNodeList);
                 createdPages.Add((figmaCanvasNode,pageGameObject));
             }
 
             // Save prefab for each page
+            var downloadPageIdList = downloadPageNodeList.Select(p => p.id).ToList();
             for (var i = 0; i < createdPages.Count; i++)
             {
-                if (!downloadPageNameList.Contains(createdPages[i].Item1.name)) continue;
+                if (!downloadPageIdList.Contains(createdPages[i].Item1.id)) continue;
 
                 PrefabUtility.SaveAsPrefabAssetAndConnect(createdPages[i].Item2,
                     FigmaPaths.GetPathForPagePrefab(createdPages[i].Item1),InteractionMode.UserAction);
@@ -58,7 +59,7 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <param name="parentTransform"></param>
         /// <param name="figmaImportProcessData"></param>
         /// <returns></returns>
-        private static GameObject BuildFigmaPage(Node pageNode, RectTransform parentTransform, FigmaImportProcessData figmaImportProcessData, List<string> downloadScreenNameList)
+        private static GameObject BuildFigmaPage(Node pageNode, RectTransform parentTransform, FigmaImportProcessData figmaImportProcessData, List<Node> downloadScreenNodeList)
         {
             var pageGameObject = new GameObject(pageNode.name, typeof(RectTransform));
             var pageTransform = pageGameObject.transform as RectTransform;
@@ -72,7 +73,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             foreach (var childNode in pageNode.children)
             {
                 if (CheckNodeValidForGeneration(childNode,figmaImportProcessData))
-                    BuildFigmaNode(childNode, pageTransform, pageNode, 0, figmaImportProcessData, downloadScreenNameList);
+                    BuildFigmaNode(childNode, pageTransform, pageNode, 0, figmaImportProcessData, downloadScreenNodeList);
             }
 
             // Instantiate all components
@@ -104,9 +105,10 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <returns></returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         private static GameObject BuildFigmaNode(Node figmaNode, RectTransform parentTransform,  Node parentFigmaNode,
-            int nodeRecursionDepth, FigmaImportProcessData figmaImportProcessData, List<string> downloadScreenNameList)
+            int nodeRecursionDepth, FigmaImportProcessData figmaImportProcessData, List<Node> downloadScreenNodeList)
         {
-            if (figmaNode.IsScreenNode(parentFigmaNode) && !downloadScreenNameList.Contains(figmaNode.name)) return null;
+            var downloadScreenIdList = downloadScreenNodeList.Select(s => s.id).ToList();
+            if (figmaNode.IsScreenNode(parentFigmaNode) && !downloadScreenIdList.Contains(figmaNode.id)) return null;
 
             // Create a gameObject for this figma node and parent to parent transform
             var nodeGameObject = new GameObject(figmaNode.name, typeof(RectTransform));
@@ -174,7 +176,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                 Mask activeMaskObject=null;
                 foreach (var childNode in figmaNode.children)
                 {
-                    var childGameObject = BuildFigmaNode(childNode, nodeRectTransform, figmaNode, nodeRecursionDepth + 1, figmaImportProcessData, downloadScreenNameList);
+                    var childGameObject = BuildFigmaNode(childNode, nodeRectTransform, figmaNode, nodeRecursionDepth + 1, figmaImportProcessData, downloadScreenNodeList);
                     if (childGameObject == null) continue;
                     // Check if this object has a mask component. If so, set as the active mask component
                     var childGameObjectMask = childGameObject.GetComponent<Mask>();
