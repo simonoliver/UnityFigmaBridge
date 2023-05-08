@@ -66,13 +66,13 @@ namespace UnityFigmaBridge.Editor
             {
                 if (s_UnityFigmaBridgeSettings.PageDataList.Count != pageNodes.Count)
                 {
-                    ReportError("Error", "Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings");
+                    ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
                     return;
                 }
 
                 if (s_UnityFigmaBridgeSettings.ScreenDataList.Count != screenNodes.Count)
                 {
-                    ReportError("Error", "Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings");
+                    ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
                     return;
                 }
 
@@ -83,13 +83,13 @@ namespace UnityFigmaBridge.Editor
 
                 if (!localPageIdList.SequenceEqual(figmaPageIdList))
                 {
-                    ReportError("Error", "Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings");
+                    ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
                     return;
                 }
 
                 if (!localScreenIdList.SequenceEqual(figmaScreenIdList))
                 {
-                    ReportError("Error", "Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings");
+                    ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
                     return;
                 }
 
@@ -98,7 +98,7 @@ namespace UnityFigmaBridge.Editor
 
                 if (downloadPageIdList.Count <= 0 && downloadScreenIdList.Count <= 0)
                 {
-                    ReportError("Error", "No Pages or Screens are selected for import");
+                    ReportError("Error No Pages or Screens are selected for import", "");
                     return;
                 }
 
