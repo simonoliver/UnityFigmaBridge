@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -106,7 +107,12 @@ namespace UnityFigmaBridge.Editor
                 screenNodes = screenNodes.Where(s => downloadScreenIdList.Contains(s.id)).ToList();
             }
 
-            ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodes, screenNodes);
+            await ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodes, screenNodes);
+
+            if (s_UnityFigmaBridgeSettings.OnlyImportSelectedPages)
+            {
+                CleanupObject();
+            }
         }
 
         [MenuItem("Figma Bridge/Sync Document")]
@@ -321,7 +327,7 @@ namespace UnityFigmaBridge.Editor
             return null;
         }
 
-        public static async void ImportDocument(string fileId, FigmaFile figmaFile, List<Node> downloadPageNodeList, List<Node> downloadScreenNodeList)
+        private static async Task ImportDocument(string fileId, FigmaFile figmaFile, List<Node> downloadPageNodeList, List<Node> downloadScreenNodeList)
         {
 
             // Ensure we have all required directories
@@ -509,6 +515,94 @@ namespace UnityFigmaBridge.Editor
             CleanUpPostGeneration();
             EditorUtility.ClearProgressBar();
             AssetDatabase.Refresh();
+        }
+
+        private static void GatherUseObjectPathList(
+            ref string[] guids,
+            ref List<string> prefabPathList,
+            ref List<string> materialPathList,
+            ref List<string> fontPathList,
+            ref List<string> assetPathList,
+            ref List<string> imagePathList
+        )
+        {
+            foreach (var guid in guids) {
+                var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                foreach (var dependencyPath in AssetDatabase.GetDependencies(assetPath, true)) {
+                    var dependencyFullPath = Path.GetFullPath(dependencyPath);
+                    if (dependencyPath.Contains(".prefab")) {
+                        prefabPathList.Add(dependencyFullPath);
+                    }
+                    if (dependencyPath.Contains(".mat")) {
+                        materialPathList.Add(dependencyFullPath);
+                    }
+                    if (dependencyPath.Contains(".ttf")) {
+                        fontPathList.Add(dependencyFullPath);
+                    }
+                    if (dependencyPath.Contains(".asset")) {
+                        assetPathList.Add(dependencyFullPath);
+                    }
+                    if (dependencyPath.Contains(".png")) {
+                        imagePathList.Add(dependencyFullPath);
+                    }
+                }
+            }
+        }
+
+        private static void DeleteNotUseObjects(string searchString, string folderPath, List<string> pathList)
+        {
+            var guids = AssetDatabase.FindAssets(searchString, new[] { folderPath });
+            foreach (var guid in guids) {
+                var prefabPath = AssetDatabase.GUIDToAssetPath(guid);
+                var prefabFullPath = Path.GetFullPath(prefabPath);
+                if (pathList.Contains(prefabFullPath)) continue;
+                FileUtil.DeleteFileOrDirectory(prefabFullPath);
+            }
+        }
+
+        /// <summary>
+        ///  Clean up not use figma components and images
+        /// </summary>
+        private static void CleanupObject()
+        {
+            try
+            {
+                List<string> prefabPathList = new();
+                List<string> materialPathList = new();
+                List<string> fontPathList = new();
+                List<string> assetPathList = new();
+                List<string> imagePathList = new();
+
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 0f);
+                var pagePrefabGuids = AssetDatabase.FindAssets("t:Prefab", new[] { FigmaPaths.FigmaPagePrefabFolder });
+                var screenPrefabGuids = AssetDatabase.FindAssets("t:Prefab", new[] { FigmaPaths.FigmaScreenPrefabFolder });
+
+                GatherUseObjectPathList(ref pagePrefabGuids, ref prefabPathList, ref materialPathList, ref fontPathList, ref assetPathList, ref imagePathList);
+                GatherUseObjectPathList(ref screenPrefabGuids, ref prefabPathList, ref materialPathList, ref fontPathList, ref assetPathList, ref imagePathList);
+
+                DeleteNotUseObjects("t:Prefab", FigmaPaths.FigmaComponentPrefabFolder, prefabPathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 1/6f);
+                DeleteNotUseObjects("t:Material", FigmaPaths.FigmaFontMaterialPresetsFolder, prefabPathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 2/6f);
+                DeleteNotUseObjects("t:Font", FigmaPaths.FigmaFontsFolder, fontPathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 3/6f);
+                DeleteNotUseObjects("t:Prefab", FigmaPaths.FigmaFontsFolder, assetPathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 4/6f);
+                DeleteNotUseObjects("t:Sprite", FigmaPaths.FigmaImageFillFolder, imagePathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 5/6f);
+                DeleteNotUseObjects("t:Sprite", FigmaPaths.FigmaServerRenderedImagesFolder, imagePathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 1f);
+            }
+            catch (Exception e)
+            {
+                ReportError("Error Cleanup Object",e.ToString());
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
         }
 
         /// <summary>
