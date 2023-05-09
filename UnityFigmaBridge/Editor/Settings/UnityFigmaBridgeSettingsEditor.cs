@@ -13,17 +13,18 @@ namespace UnityFigmaBridge.Editor.Settings
         private bool m_OnlyImportSelectedPages;
         private static bool m_DownloadCompleted;
 
-        static Vector2 s_PageScrollPos;
-        static Vector2 s_ScreenScrollPos;
+        private static Vector2 s_PageScrollPos;
+        private static Vector2 s_ScreenScrollPos;
 
-        public static List<Node> PageNodes { get; private set; }
-        public static List<Node> ScreenNodes { get; private set; }
+        private static List<Node> s_PageNodeList;
+        private static List<Node> s_ScreenNodeList;
 
         private static void ClearList()
         {
-            PageNodes = new();
-            ScreenNodes = new();
+            s_PageNodeList = new List<Node>();
+            s_ScreenNodeList = new List<Node>();
         }
+
         private static async void DownloadFigmaDocument()
         {
             var requirementsMet = UnityFigmaBridgeImporter.CheckRequirements();
@@ -32,11 +33,11 @@ namespace UnityFigmaBridge.Editor.Settings
             var figmaFile = await UnityFigmaBridgeImporter.DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
             if (figmaFile == null) return;
             
-            PageNodes = FigmaDataUtils.GetPageNodes(figmaFile);
-            ScreenNodes = FigmaDataUtils.GetScreenNodes(figmaFile);
+            s_PageNodeList = FigmaDataUtils.GetPageNodes(figmaFile);
+            s_ScreenNodeList = FigmaDataUtils.GetScreenNodes(figmaFile);
 
-            var downloadPageNodeIdList = PageNodes.Select(p => p.id).ToList();
-            var downloadScreenNodeIdList = ScreenNodes.Select(s => s.id).ToList();
+            var downloadPageNodeIdList = s_PageNodeList.Select(p => p.id).ToList();
+            var downloadScreenNodeIdList = s_ScreenNodeList.Select(s => s.id).ToList();
 
             var settingsPageDataIdList = s_UnityFigmaBridgeSettings.PageDataList.Select(p => p.Id).ToList();
             var settingsScreenDataIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Select(s => s.Id).ToList();
@@ -46,12 +47,12 @@ namespace UnityFigmaBridge.Editor.Settings
 
             foreach (var addPageId in addPageIdList)
             {
-                var addNode = PageNodes.FirstOrDefault(p => p.id == addPageId);
+                var addNode = s_PageNodeList.FirstOrDefault(p => p.id == addPageId);
                 s_UnityFigmaBridgeSettings.PageDataList.Add(new LineData(addNode.name, addNode.id));
             }
             foreach (var addScreenId in addScreenIdList)
             {
-                var addNode = ScreenNodes.FirstOrDefault(p => p.id == addScreenId);
+                var addNode = s_ScreenNodeList.FirstOrDefault(p => p.id == addScreenId);
                 s_UnityFigmaBridgeSettings.ScreenDataList.Add(new LineData(addNode.name, addNode.id));
             }
             
@@ -60,12 +61,12 @@ namespace UnityFigmaBridge.Editor.Settings
 
             foreach (var deletePageId in deletePageIdList)
             {
-                int index = s_UnityFigmaBridgeSettings.PageDataList.FindIndex(p => p.Id == deletePageId);
+                var index = s_UnityFigmaBridgeSettings.PageDataList.FindIndex(p => p.Id == deletePageId);
                 s_UnityFigmaBridgeSettings.PageDataList.RemoveAt(index);
             }
             foreach (var deleteScreenId in deleteScreenIdList)
             {
-                int index = s_UnityFigmaBridgeSettings.ScreenDataList.FindIndex(s => s.Id == deleteScreenId);
+                var index = s_UnityFigmaBridgeSettings.ScreenDataList.FindIndex(s => s.Id == deleteScreenId);
                 s_UnityFigmaBridgeSettings.ScreenDataList.RemoveAt(index);
             }
 
@@ -75,7 +76,7 @@ namespace UnityFigmaBridge.Editor.Settings
             m_DownloadCompleted = true;
         }
 
-        static void ListCore(string listTitle, IReadOnlyList<LineData> dataList, IReadOnlyList<Node> downloadList, ref Vector2 scrollPos)
+        private static void ListCore(string listTitle, IReadOnlyList<LineData> dataList, IReadOnlyList<Node> downloadList, ref Vector2 scrollPos)
         {
             var isSave = false;
             using (new EditorGUILayout.VerticalScope()) {
@@ -103,6 +104,7 @@ namespace UnityFigmaBridge.Editor.Settings
                     foreach (var data in dataList) {
                         var isChecked = data.IsChecked;
                         var node = downloadList.FirstOrDefault(p => p.id == data.Id);
+                        if (node == null) continue;
                         
                         data.IsChecked = EditorGUILayout.ToggleLeft(node.name, data.IsChecked);
                         if (isChecked != data.IsChecked) {
@@ -124,11 +126,11 @@ namespace UnityFigmaBridge.Editor.Settings
             GUILayout.Space(20);
             using (new EditorGUILayout.HorizontalScope()) {
                 if (0 < s_UnityFigmaBridgeSettings.PageDataList.Count) {
-                    ListCore("Select Download Pages", s_UnityFigmaBridgeSettings.PageDataList, PageNodes, ref s_PageScrollPos);
+                    ListCore("Select Download Pages", s_UnityFigmaBridgeSettings.PageDataList, s_PageNodeList, ref s_PageScrollPos);
                 }
                 GUILayout.Space(5);
                 if (0 < s_UnityFigmaBridgeSettings.ScreenDataList.Count) {
-                    ListCore("Select Download Screens", s_UnityFigmaBridgeSettings.ScreenDataList, ScreenNodes,ref s_ScreenScrollPos);
+                    ListCore("Select Download Screens", s_UnityFigmaBridgeSettings.ScreenDataList, s_ScreenNodeList,ref s_ScreenScrollPos);
                 }
             }
         }

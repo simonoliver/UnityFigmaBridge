@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -52,7 +51,7 @@ namespace UnityFigmaBridge.Editor
         /// </summary>
         private static PrototypeFlowController s_PrototypeFlowController;
 
-        static async void SyncAsync()
+        private static async void SyncAsync()
         {
             var requirementsMet = CheckRequirements();
             if (!requirementsMet) return;
@@ -60,54 +59,55 @@ namespace UnityFigmaBridge.Editor
             var figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
             if (figmaFile == null) return;
 
-            var pageNodes = FigmaDataUtils.GetPageNodes(figmaFile);
-            var screenNodes = FigmaDataUtils.GetScreenNodes(figmaFile);
+            var pageNodeList = FigmaDataUtils.GetPageNodes(figmaFile);
+            var screenNodeList = FigmaDataUtils.GetScreenNodes(figmaFile);
 
             if (s_UnityFigmaBridgeSettings.OnlyImportSelectedPages)
             {
-                if (s_UnityFigmaBridgeSettings.PageDataList.Count != pageNodes.Count)
+                if (s_UnityFigmaBridgeSettings.PageDataList.Count != pageNodeList.Count)
                 {
                     ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
                     return;
                 }
 
-                if (s_UnityFigmaBridgeSettings.ScreenDataList.Count != screenNodes.Count)
+                if (s_UnityFigmaBridgeSettings.ScreenDataList.Count != screenNodeList.Count)
                 {
                     ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
                     return;
                 }
 
-                var localPageIdList = s_UnityFigmaBridgeSettings.PageDataList.Select(p => p.Id).ToList();
-                var localScreenIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Select(s => s.Id).ToList();
-                var figmaPageIdList = pageNodes.Select(p => p.id).ToList();
-                var figmaScreenIdList = screenNodes.Select(s => s.id).ToList();
+                var downloadPageNodeIdList = pageNodeList.Select(p => p.id).ToList();
+                var downloadScreenNodeIdList = screenNodeList.Select(s => s.id).ToList();
 
-                if (!localPageIdList.SequenceEqual(figmaPageIdList))
+                var settingsPageDataIdList = s_UnityFigmaBridgeSettings.PageDataList.Select(p => p.Id).ToList();
+                var settingsScreenDataIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Select(s => s.Id).ToList();
+
+                if (!settingsPageDataIdList.SequenceEqual(downloadPageNodeIdList))
                 {
                     ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
                     return;
                 }
 
-                if (!localScreenIdList.SequenceEqual(figmaScreenIdList))
+                if (!settingsScreenDataIdList.SequenceEqual(downloadScreenNodeIdList))
                 {
                     ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
                     return;
                 }
 
-                var downloadPageIdList = s_UnityFigmaBridgeSettings.PageDataList.Where(p => p.IsChecked).Select(p => p.Id).ToList();
-                var downloadScreenIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Where(s => s.IsChecked).Select(s => s.Id).ToList();
+                var enabledPageIdList = s_UnityFigmaBridgeSettings.PageDataList.Where(p => p.IsChecked).Select(p => p.Id).ToList();
+                var enabledScreenIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Where(s => s.IsChecked).Select(s => s.Id).ToList();
 
-                if (downloadPageIdList.Count <= 0 && downloadScreenIdList.Count <= 0)
+                if (enabledPageIdList.Count <= 0 && enabledScreenIdList.Count <= 0)
                 {
                     ReportError("Error No Pages or Screens are selected for import", "");
                     return;
                 }
 
-                pageNodes = pageNodes.Where(p => downloadPageIdList.Contains(p.id)).ToList();
-                screenNodes = screenNodes.Where(s => downloadScreenIdList.Contains(s.id)).ToList();
+                pageNodeList = pageNodeList.Where(p => enabledPageIdList.Contains(p.id)).ToList();
+                screenNodeList = screenNodeList.Where(s => enabledScreenIdList.Contains(s.id)).ToList();
             }
 
-            await ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodes, screenNodes);
+            await ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodeList, screenNodeList);
 
             if (s_UnityFigmaBridgeSettings.OnlyImportSelectedPages)
             {

@@ -434,7 +434,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             return pageNodes;
         }
 
-        static void SearchScreenNodes(Node node, Node parentNode, List<Node> screenNodes)
+        private static void SearchScreenNodes(Node node, Node parentNode, List<Node> screenNodes)
         {
             if (node.IsScreenNode(parentNode))
             {
