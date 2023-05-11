@@ -67,12 +67,14 @@ namespace UnityFigmaBridge.Editor
                 if (s_UnityFigmaBridgeSettings.PageDataList.Count != pageNodeList.Count)
                 {
                     ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
+                    SelectSettings();
                     return;
                 }
 
                 if (s_UnityFigmaBridgeSettings.ScreenDataList.Count != screenNodeList.Count)
                 {
                     ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
+                    SelectSettings();
                     return;
                 }
 
@@ -91,12 +93,14 @@ namespace UnityFigmaBridge.Editor
                 if (!settingsPageDataIdList.SequenceEqual(downloadPageNodeIdList))
                 {
                     ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
+                    SelectSettings();
                     return;
                 }
 
                 if (!settingsScreenDataIdList.SequenceEqual(downloadScreenNodeIdList))
                 {
                     ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
+                    SelectSettings();
                     return;
                 }
 
@@ -106,6 +110,7 @@ namespace UnityFigmaBridge.Editor
                 if (enabledPageIdList.Count <= 0 && enabledScreenIdList.Count <= 0)
                 {
                     ReportError("Error No Pages or Screens are selected for import", "");
+                    SelectSettings();
                     return;
                 }
 
