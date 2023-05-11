@@ -147,14 +147,11 @@ Shader "Figma/FigmaImageShader"
 
                     float4 clampedCornerRadius=float4(_CornerRadius.x,_CornerRadius.y,_CornerRadius.z,_CornerRadius.w);
                 
-                    clampedCornerRadius.x/=cornerSizeTopRatio;
-                    clampedCornerRadius.x/=cornerSizeRightRatio;
-                    clampedCornerRadius.y/=cornerSizeBottomRatio;
-                    clampedCornerRadius.y/=cornerSizeRightRatio;
-                    clampedCornerRadius.z/=cornerSizeTopRatio;
-                    clampedCornerRadius.z/=cornerSizeLeftRatio;
-                    clampedCornerRadius.w/=cornerSizeBottomRatio;
-                    clampedCornerRadius.w/=cornerSizeLeftRatio;
+                    // Divide by the largest of the relevant ratios such that the corner is only constrained by the smallest side.
+                    clampedCornerRadius.x/=max(cornerSizeTopRatio,cornerSizeRightRatio);
+                    clampedCornerRadius.y/=max(cornerSizeBottomRatio,cornerSizeRightRatio);
+                    clampedCornerRadius.z/=max(cornerSizeTopRatio,cornerSizeLeftRatio);
+                    clampedCornerRadius.w/=max(cornerSizeBottomRatio,cornerSizeLeftRatio);
                 
                     OUT.clamped_corner_radius=clampedCornerRadius;
                 #endif
