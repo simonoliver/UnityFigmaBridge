@@ -70,6 +70,9 @@ namespace UnityFigmaBridge.Editor.Settings
                 s_UnityFigmaBridgeSettings.ScreenDataList.RemoveAt(index);
             }
 
+            s_UnityFigmaBridgeSettings.PageDataList.OrderBy(p => p.Id);
+            s_UnityFigmaBridgeSettings.ScreenDataList.OrderBy(s => s.Id);
+
             EditorUtility.SetDirty(s_UnityFigmaBridgeSettings);
             AssetDatabase.SaveAssetIfDirty(s_UnityFigmaBridgeSettings);
 

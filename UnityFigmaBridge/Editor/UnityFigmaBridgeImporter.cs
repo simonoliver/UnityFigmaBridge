@@ -79,8 +79,14 @@ namespace UnityFigmaBridge.Editor
                 var downloadPageNodeIdList = pageNodeList.Select(p => p.id).ToList();
                 var downloadScreenNodeIdList = screenNodeList.Select(s => s.id).ToList();
 
+                downloadPageNodeIdList.Sort();
+                downloadScreenNodeIdList.Sort();
+
                 var settingsPageDataIdList = s_UnityFigmaBridgeSettings.PageDataList.Select(p => p.Id).ToList();
                 var settingsScreenDataIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Select(s => s.Id).ToList();
+
+                settingsPageDataIdList.Sort();
+                settingsScreenDataIdList.Sort();
 
                 if (!settingsPageDataIdList.SequenceEqual(downloadPageNodeIdList))
                 {
