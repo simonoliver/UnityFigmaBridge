@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityFigmaBridge.Editor.FigmaApi;
 
 namespace UnityFigmaBridge.Editor.Settings
@@ -32,12 +34,33 @@ namespace UnityFigmaBridge.Editor.Settings
         [Tooltip("If false, the generator will not attempt to build any nodes marked for export")]
         public bool GenerateNodesMarkedForExport = true;
 
+        [Tooltip("If true, download only selected pages and screens")]
+        public bool OnlyImportSelectedPages = false;
+
+        [HideInInspector] public List<LineData> PageDataList = new ();
+        [HideInInspector] public List<LineData> ScreenDataList = new ();
+
         public string FileId {
             get
             {
                 var (isValid, fileId) = FigmaApiUtils.GetFigmaDocumentIdFromUrl(DocumentUrl);
                 return isValid ? fileId : "";
             }
+        }
+    }
+
+    [Serializable]
+    public class LineData
+    {
+        public string Id;
+        public bool IsChecked;
+
+        public LineData(){}
+
+        public LineData(string name, string id)
+        {
+            Id = id;
+            IsChecked = true; // default is true
         }
     }
 }

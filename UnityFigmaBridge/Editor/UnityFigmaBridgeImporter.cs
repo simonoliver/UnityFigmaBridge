@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -47,22 +50,93 @@ namespace UnityFigmaBridge.Editor
         /// The flowScreen controller to mange prototype functionality
         /// </summary>
         private static PrototypeFlowController s_PrototypeFlowController;
-        
+
+        private static async void SyncAsync()
+        {
+            var requirementsMet = CheckRequirements();
+            if (!requirementsMet) return;
+
+            var figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
+            if (figmaFile == null) return;
+
+            var pageNodeList = FigmaDataUtils.GetPageNodes(figmaFile);
+            var screenNodeList = FigmaDataUtils.GetScreenNodes(figmaFile);
+
+            if (s_UnityFigmaBridgeSettings.OnlyImportSelectedPages)
+            {
+                if (s_UnityFigmaBridgeSettings.PageDataList.Count != pageNodeList.Count)
+                {
+                    ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
+                    SelectSettings();
+                    return;
+                }
+
+                if (s_UnityFigmaBridgeSettings.ScreenDataList.Count != screenNodeList.Count)
+                {
+                    ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
+                    SelectSettings();
+                    return;
+                }
+
+                var downloadPageNodeIdList = pageNodeList.Select(p => p.id).ToList();
+                var downloadScreenNodeIdList = screenNodeList.Select(s => s.id).ToList();
+
+                downloadPageNodeIdList.Sort();
+                downloadScreenNodeIdList.Sort();
+
+                var settingsPageDataIdList = s_UnityFigmaBridgeSettings.PageDataList.Select(p => p.Id).ToList();
+                var settingsScreenDataIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Select(s => s.Id).ToList();
+
+                settingsPageDataIdList.Sort();
+                settingsScreenDataIdList.Sort();
+
+                if (!settingsPageDataIdList.SequenceEqual(downloadPageNodeIdList))
+                {
+                    ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
+                    SelectSettings();
+                    return;
+                }
+
+                if (!settingsScreenDataIdList.SequenceEqual(downloadScreenNodeIdList))
+                {
+                    ReportError("Error Figma site is Updated, In the Unity Figma Bridge Settings, turn off the Only Import Selected Pages checkbox and then turn it back on to reacquire the Page and Screen listings", "");
+                    SelectSettings();
+                    return;
+                }
+
+                var enabledPageIdList = s_UnityFigmaBridgeSettings.PageDataList.Where(p => p.IsChecked).Select(p => p.Id).ToList();
+                var enabledScreenIdList = s_UnityFigmaBridgeSettings.ScreenDataList.Where(s => s.IsChecked).Select(s => s.Id).ToList();
+
+                if (enabledPageIdList.Count <= 0 && enabledScreenIdList.Count <= 0)
+                {
+                    ReportError("Error No Pages or Screens are selected for import", "");
+                    SelectSettings();
+                    return;
+                }
+
+                pageNodeList = pageNodeList.Where(p => enabledPageIdList.Contains(p.id)).ToList();
+                screenNodeList = screenNodeList.Where(s => enabledScreenIdList.Contains(s.id)).ToList();
+            }
+
+            await ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodeList, screenNodeList);
+
+            if (s_UnityFigmaBridgeSettings.OnlyImportSelectedPages)
+            {
+                CleanupObject();
+            }
+        }
+
         [MenuItem("Figma Bridge/Sync Document")]
         static void Sync()
         {
-            var requirementsMet = CheckRequirements();
-            if (requirementsMet)
-            {
-                ImportDocument(s_UnityFigmaBridgeSettings.FileId);
-            }
+            SyncAsync();
         }
-        
+
         /// <summary>
         /// Check to make sure all requirements are met before syncing
         /// </summary>
         /// <returns></returns>
-        private static bool CheckRequirements() {
+        public static bool CheckRequirements() {
             
             // Find the settings asset if it exists
             if (s_UnityFigmaBridgeSettings == null)
@@ -198,6 +272,7 @@ namespace UnityFigmaBridge.Editor
                 s_PersonalAccessToken = newAccessToken;
                 Debug.Log( $"New access token set {s_PersonalAccessToken}");
                 PlayerPrefs.SetString(FIGMA_PERSONAL_ACCESS_TOKEN_PREF_KEY,s_PersonalAccessToken);
+                PlayerPrefs.Save();
                 return true;
             }
 
@@ -239,29 +314,35 @@ namespace UnityFigmaBridge.Editor
             EditorUtility.DisplayDialog("Unity Figma Bridge Error",message,"Ok");
             Debug.LogWarning($"{message}\n {error}\n");
         }
-        
-        private static async void ImportDocument(string fileId)
-        {
 
-            // Ensure we have all required directories
-            FigmaPaths.CreateRequiredDirectories();
-            
+        public static async Task<FigmaFile> DownloadFigmaDocument(string fileId)
+        {
             // Download figma document
-            FigmaFile figmaFile;
             EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading file", 0);
             try
             {
-               var figmaTask = FigmaApiUtils.GetFigmaDocument(fileId, s_PersonalAccessToken, true);
-               await figmaTask;
-               figmaFile = figmaTask.Result;
+                var figmaTask = FigmaApiUtils.GetFigmaDocument(fileId, s_PersonalAccessToken, true);
+                await figmaTask;
+                return figmaTask.Result;
             }
             catch (Exception e)
             {
-                EditorUtility.ClearProgressBar();
-                ReportError("Error downloading Figma document - Check your personal access key and document url are correct", e.ToString());
-                return;
+                ReportError(
+                    "Error downloading Figma document - Check your personal access key and document url are correct",
+                    e.ToString());
             }
-            
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+            return null;
+        }
+
+        private static async Task ImportDocument(string fileId, FigmaFile figmaFile, List<Node> downloadPageNodeList, List<Node> downloadScreenNodeList)
+        {
+
+            // Ensure we have all required directories
+            FigmaPaths.CreateRequiredDirectories(downloadPageNodeList, downloadScreenNodeList);
             
             // Next build a list of all externally referenced components not included in the document (eg
             // from external libraries) and download
@@ -384,7 +465,7 @@ namespace UnityFigmaBridge.Editor
 
             try
             {
-                FigmaAssetGenerator.BuildFigmaFile(s_SceneCanvas, figmaBridgeProcessData);
+                FigmaAssetGenerator.BuildFigmaFile(s_SceneCanvas, figmaBridgeProcessData, downloadPageNodeList, downloadScreenNodeList);
             }
             catch (Exception e)
             {
@@ -445,6 +526,94 @@ namespace UnityFigmaBridge.Editor
             CleanUpPostGeneration();
             EditorUtility.ClearProgressBar();
             AssetDatabase.Refresh();
+        }
+
+        private static void GatherUseObjectPathList(
+            ref string[] guids,
+            ref List<string> prefabPathList,
+            ref List<string> materialPathList,
+            ref List<string> fontPathList,
+            ref List<string> assetPathList,
+            ref List<string> imagePathList
+        )
+        {
+            foreach (var guid in guids) {
+                var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                foreach (var dependencyPath in AssetDatabase.GetDependencies(assetPath, true)) {
+                    var dependencyFullPath = Path.GetFullPath(dependencyPath);
+                    if (dependencyPath.Contains(".prefab")) {
+                        prefabPathList.Add(dependencyFullPath);
+                    }
+                    if (dependencyPath.Contains(".mat")) {
+                        materialPathList.Add(dependencyFullPath);
+                    }
+                    if (dependencyPath.Contains(".ttf")) {
+                        fontPathList.Add(dependencyFullPath);
+                    }
+                    if (dependencyPath.Contains(".asset")) {
+                        assetPathList.Add(dependencyFullPath);
+                    }
+                    if (dependencyPath.Contains(".png")) {
+                        imagePathList.Add(dependencyFullPath);
+                    }
+                }
+            }
+        }
+
+        private static void DeleteNotUseObjects(string searchString, string folderPath, List<string> pathList)
+        {
+            var guids = AssetDatabase.FindAssets(searchString, new[] { folderPath });
+            foreach (var guid in guids) {
+                var prefabPath = AssetDatabase.GUIDToAssetPath(guid);
+                var prefabFullPath = Path.GetFullPath(prefabPath);
+                if (pathList.Contains(prefabFullPath)) continue;
+                FileUtil.DeleteFileOrDirectory(prefabFullPath);
+            }
+        }
+
+        /// <summary>
+        ///  Clean up not use figma components and images
+        /// </summary>
+        private static void CleanupObject()
+        {
+            try
+            {
+                List<string> prefabPathList = new();
+                List<string> materialPathList = new();
+                List<string> fontPathList = new();
+                List<string> assetPathList = new();
+                List<string> imagePathList = new();
+
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 0f);
+                var pagePrefabGuids = AssetDatabase.FindAssets("t:Prefab", new[] { FigmaPaths.FigmaPagePrefabFolder });
+                var screenPrefabGuids = AssetDatabase.FindAssets("t:Prefab", new[] { FigmaPaths.FigmaScreenPrefabFolder });
+
+                GatherUseObjectPathList(ref pagePrefabGuids, ref prefabPathList, ref materialPathList, ref fontPathList, ref assetPathList, ref imagePathList);
+                GatherUseObjectPathList(ref screenPrefabGuids, ref prefabPathList, ref materialPathList, ref fontPathList, ref assetPathList, ref imagePathList);
+
+                DeleteNotUseObjects("t:Prefab", FigmaPaths.FigmaComponentPrefabFolder, prefabPathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 1/6f);
+                DeleteNotUseObjects("t:Material", FigmaPaths.FigmaFontMaterialPresetsFolder, prefabPathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 2/6f);
+                DeleteNotUseObjects("t:Font", FigmaPaths.FigmaFontsFolder, fontPathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 3/6f);
+                DeleteNotUseObjects("t:Prefab", FigmaPaths.FigmaFontsFolder, assetPathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 4/6f);
+                DeleteNotUseObjects("t:Sprite", FigmaPaths.FigmaImageFillFolder, imagePathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 5/6f);
+                DeleteNotUseObjects("t:Sprite", FigmaPaths.FigmaServerRenderedImagesFolder, imagePathList);
+                EditorUtility.DisplayProgressBar("Cleanup Objects", "Clear", 1f);
+            }
+            catch (Exception e)
+            {
+                ReportError("Error Cleanup Object",e.ToString());
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
         }
 
         /// <summary>
