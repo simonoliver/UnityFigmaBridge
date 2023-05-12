@@ -436,7 +436,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
 
         private static void SearchScreenNodes(Node node, Node parentNode, List<Node> screenNodes)
         {
-            if (node.IsScreenNode(parentNode))
+            if (IsScreenNode(node,parentNode))
             {
                 screenNodes.Add(node);
             }
@@ -462,6 +462,17 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 SearchScreenNodes(node, null, screenNodes);
             }
             return screenNodes;
+        }
+
+        /// <summary>
+        /// Check for Node is Screen Node
+        /// </summary>
+        public static bool IsScreenNode(Node node, Node parentNode)
+        {
+            if (node.type != NodeType.FRAME) return false;
+            if (parentNode == null) return false;
+            if (parentNode is { type: NodeType.CANVAS or NodeType.SECTION }) return true;
+            return false;
         }
     }
 }

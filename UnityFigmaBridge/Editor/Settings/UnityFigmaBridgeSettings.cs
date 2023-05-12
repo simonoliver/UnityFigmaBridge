@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityFigmaBridge.Editor.FigmaApi;
 
@@ -37,8 +38,9 @@ namespace UnityFigmaBridge.Editor.Settings
         [Tooltip("If true, download only selected pages and screens")]
         public bool OnlyImportSelectedPages = false;
 
-        [HideInInspector] public List<LineData> PageDataList = new ();
-        [HideInInspector] public List<LineData> ScreenDataList = new ();
+        [HideInInspector]
+        public List<FigmaPageData> PageDataList = new ();
+        
 
         public string FileId {
             get
@@ -47,20 +49,50 @@ namespace UnityFigmaBridge.Editor.Settings
                 return isValid ? fileId : "";
             }
         }
+        
+        public void RefreshForUpdatedPages(FigmaFile file)
+        {
+            // Get all pages from Figma Doc
+            var pageNodeList = FigmaDataUtils.GetPageNodes(file);
+            var downloadPageNodeIdList = pageNodeList.Select(p => p.id).ToList();
+
+            // Get a list of all pages in the settings file
+            var settingsPageDataIdList = PageDataList.Select(p => p.NodeId).ToList();
+
+            // Build a list of all new pages to add
+            var addPageIdList = downloadPageNodeIdList.Except(settingsPageDataIdList);
+            foreach (var addPageId in addPageIdList)
+            {
+                var addNode = pageNodeList.FirstOrDefault(p => p.id == addPageId);
+                PageDataList.Add(new FigmaPageData(addNode.name, addNode.id));
+            }
+            
+            // Build a list of removed pages to remove from list
+            var deletePageIdList = settingsPageDataIdList.Except(downloadPageNodeIdList);
+            foreach (var deletePageId in deletePageIdList)
+            {
+                var index = PageDataList.FindIndex(p => p.NodeId == deletePageId);
+                PageDataList.RemoveAt(index);
+            }
+            PageDataList.OrderBy(p => p.NodeId);
+        }
     }
 
     [Serializable]
-    public class LineData
+    public class FigmaPageData
     {
-        public string Id;
-        public bool IsChecked;
+        public string Name;
+        public string NodeId;
+        public bool Selected;
 
-        public LineData(){}
+        public FigmaPageData(){}
 
-        public LineData(string name, string id)
+        public FigmaPageData(string name, string nodeId)
         {
-            Id = id;
-            IsChecked = true; // default is true
+            Name = name;
+            NodeId = nodeId;
+            Selected = true; // default is true
         }
     }
+    
 }

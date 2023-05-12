@@ -56,6 +56,11 @@ namespace UnityFigmaBridge.Editor
         /// List of all prototype flow starting points
         /// </summary>
         public List<string> PrototypeFlowStartPoints = new();
+
+        /// <summary>
+        /// List of all page nodes to import
+        /// </summary>
+        public List<Node> SelectedPagesForImport = new();
     }
 
     /// <summary>
