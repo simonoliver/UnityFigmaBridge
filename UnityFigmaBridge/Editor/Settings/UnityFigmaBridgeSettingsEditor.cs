@@ -9,51 +9,73 @@ namespace UnityFigmaBridge.Editor.Settings
     [CustomEditor(typeof(UnityFigmaBridgeSettings))]
     public sealed class UnityFigmaBridgeSettingsEditor : UnityEditor.Editor
     {
-        private static UnityFigmaBridgeSettings s_UnityFigmaBridgeSettings;
-        private bool m_OnlyImportSelectedPages;
-
+        
         private static Vector2 s_PageScrollPos;
         private static Vector2 s_ScreenScrollPos;
 
-        
-        
         public override void OnInspectorGUI()
         {
+            var targetSettingsObject = target as UnityFigmaBridgeSettings;
+            var onlyImportPages= targetSettingsObject.OnlyImportSelectedPages;
             base.OnInspectorGUI();
-            s_UnityFigmaBridgeSettings = UnityFigmaBridgeSettingsProvider.FindUnityBridgeSettingsAsset();
-            if (!s_UnityFigmaBridgeSettings.OnlyImportSelectedPages) {
-                m_OnlyImportSelectedPages = false;
-                return;
+            
+            if (targetSettingsObject.OnlyImportSelectedPages != onlyImportPages)
+            {
+                if (targetSettingsObject.OnlyImportSelectedPages)
+                {
+                    // Update pages
+                    RefreshPageList(targetSettingsObject);
+                }
+                else
+                {
+                    // Reset list
+                    targetSettingsObject.PageDataList.Clear();
+                }
+                Debug.Log("Settings changed!");
             }
 
-            if (m_OnlyImportSelectedPages == false) {
-                m_OnlyImportSelectedPages = true;
-                RefreshPageList();
+            if (targetSettingsObject.OnlyImportSelectedPages)
+            {
+                GUILayout.Space(20);
+                var changed = ListPages("Select Pages to import", targetSettingsObject.PageDataList,
+                    ref s_PageScrollPos);
+                if (changed)
+                {
+                    EditorUtility.SetDirty(targetSettingsObject);
+                    AssetDatabase.SaveAssetIfDirty(targetSettingsObject);
+                }
             }
-            
-            // Always show list
-            GUILayout.Space(20);
-            ListCore("Select Download Pages", s_UnityFigmaBridgeSettings.PageDataList, ref s_PageScrollPos);
         }
 
-        
-        private static async void RefreshPageList()
+
+        /// <summary>
+        /// Download the document and refresh the page list
+        /// </summary>
+        /// <param name="settings"></param>
+        private static async void RefreshPageList(UnityFigmaBridgeSettings settings)
         {
             // Only refresh pages if we have a valid file
             var requirementsMet = UnityFigmaBridgeImporter.CheckRequirements();
             if (!requirementsMet) return;
 
             // Retrieve the Figma document
-            var figmaFile = await UnityFigmaBridgeImporter.DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
+            var figmaFile = await UnityFigmaBridgeImporter.DownloadFigmaDocument(settings.FileId);
             if (figmaFile == null) return;
             
-            s_UnityFigmaBridgeSettings.RefreshForUpdatedPages(figmaFile);
+            settings.RefreshForUpdatedPages(figmaFile);
 
-            EditorUtility.SetDirty(s_UnityFigmaBridgeSettings);
-            AssetDatabase.SaveAssetIfDirty(s_UnityFigmaBridgeSettings);
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssetIfDirty(settings);
         }
 
-        private static void ListCore(string listTitle, IReadOnlyList<FigmaPageData> dataList, ref Vector2 scrollPos)
+        /// <summary>
+        /// List all pages in the settings file
+        /// </summary>
+        /// <param name="listTitle"></param>
+        /// <param name="dataList"></param>
+        /// <param name="scrollPos"></param>
+        /// <returns></returns>
+        private static bool ListPages(string listTitle, IReadOnlyList<FigmaPageData> dataList, ref Vector2 scrollPos)
         {
             var applyChanges = false;
             using (new EditorGUILayout.VerticalScope()) {
@@ -89,9 +111,8 @@ namespace UnityFigmaBridge.Editor.Settings
                     scrollPos = scrollViewScope.scrollPosition;
                 }
 
-                if (!applyChanges) return;
-                EditorUtility.SetDirty(s_UnityFigmaBridgeSettings);
-                AssetDatabase.SaveAssetIfDirty(s_UnityFigmaBridgeSettings);
+                return applyChanges;
+
             }
         }
         

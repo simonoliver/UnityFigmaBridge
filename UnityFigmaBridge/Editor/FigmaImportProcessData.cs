@@ -51,6 +51,11 @@ namespace UnityFigmaBridge.Editor
         /// Count of flowScreen prefabs created with a specific name (to prevent name collision)
         /// </summary>
         public Dictionary<string, int> ScreenPrefabNameCounter = new();
+        
+        /// <summary>
+        /// Count of page prefab created with a specific name (to prevent name collision)
+        /// </summary>
+        public Dictionary<string, int> PagePrefabNameCounter = new();
 
         /// <summary>
         /// List of all prototype flow starting points

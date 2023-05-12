@@ -38,9 +38,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             for (var i = 0; i < createdPages.Count; i++)
             {
                 if (!downloadPageIdList.Contains(createdPages[i].Item1.id)) continue;
-
-                PrefabUtility.SaveAsPrefabAssetAndConnect(createdPages[i].Item2,
-                    FigmaPaths.GetPathForPagePrefab(createdPages[i].Item1),InteractionMode.UserAction);
+                SaveFigmaPageAsPrefab(createdPages[i].Item1, createdPages[i].Item2,figmaImportProcessData);
             }
             
             // Destroy all page objects
@@ -50,7 +48,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             }
         }
 
-        
+       
 
         /// <summary>
         /// Builds an individual page (Canvas object in Figma API)
@@ -235,8 +233,8 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <param name="figmaImportProcessData"></param>
         private static void SaveFigmaScreenAsPrefab(Node node, Node parentNode,RectTransform screenRectTransform, FigmaImportProcessData figmaImportProcessData)
         {
-            var screenNameCount = figmaImportProcessData.ScreenPrefabNameCounter.ContainsKey(node.name)
-                ? figmaImportProcessData.ScreenPrefabNameCounter[node.name] : 0;
+            var screenNameCount = figmaImportProcessData.ScreenPrefabNameCounter.TryGetValue(node.name, out var value)
+                ? value : 0;
             
             // Increment count to ensure no naming collisions
             figmaImportProcessData.ScreenPrefabNameCounter[node.name] = screenNameCount + 1;
@@ -257,7 +255,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                 {
                     FigmaScreenPrefab = screenPrefab,
                     FigmaNodeId = node.id,
-                    FigmaScreenName = FigmaPaths.GetScreenNameForNode(node, screenNameCount),
+                    FigmaScreenName = FigmaPaths.GetFileNameForNode(node, screenNameCount),
                     // Store the section that this is part of (if applicable)
                     ParentSectionNodeId = parentNode is { type: NodeType.SECTION } ? parentNode.id : string.Empty
                 });
@@ -265,6 +263,28 @@ namespace UnityFigmaBridge.Editor.Nodes
             
             figmaImportProcessData.ScreenPrefabs.Add(screenPrefab);
         }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="pageGameObject"></param>
+        /// <param name="figmaImportProcessData"></param>
+        private static void SaveFigmaPageAsPrefab(Node node, GameObject pageGameObject, FigmaImportProcessData figmaImportProcessData)
+        {
+           
+            var pageNameCount = figmaImportProcessData.PagePrefabNameCounter.TryGetValue(node.name, out var value)
+                ? value : 0;
+            
+            // Increment count to ensure no naming collisions
+            figmaImportProcessData.PagePrefabNameCounter[node.name] = pageNameCount + 1;
+
+            PrefabUtility.SaveAsPrefabAssetAndConnect(pageGameObject,
+                FigmaPaths.GetPathForPagePrefab(node,pageNameCount),InteractionMode.UserAction);
+        }
+
+
+
 
 
         /// <summary>
