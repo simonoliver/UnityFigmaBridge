@@ -338,10 +338,15 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             
             // If a given node has the word "render", mark for rendering
             if (node.name.ToLower().Contains("render")) return true;
-            
-            // Right now Vector type is the only one we always render server-side. This may change if we support native vector rendering
-            if (node.type == NodeType.VECTOR) return true;
-            
+
+            // Some types we always render server-side. This may change if we support native vector rendering
+            switch (node.type)
+            {
+                case NodeType.VECTOR:
+                case NodeType.BOOLEAN_OPERATION:
+                    return true;
+            }
+
             // The pattern we identify for server side vector rendering is:
             // * At least one sub nodes of type vector
             // * Only containing sub nodes of type VECTOR, FRAME, GROUP, COMPONENT, INSTANCE

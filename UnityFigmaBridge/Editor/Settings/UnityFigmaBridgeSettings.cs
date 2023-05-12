@@ -19,6 +19,8 @@ namespace UnityFigmaBridge.Editor.Settings
         [Tooltip("Scene used for prototype assets, including canvas")]
         public string RunTimeAssetsScenePath;
         
+        [Tooltip("Enable Auto layout components (Horizontal/Vertical layout) (EXPERIMENTAL)")]
+        public bool EnableAutoLayout = false;
         
         [Tooltip("C# Namespace filter for binding MonoBehaviours for screens. Use this to ensure it will only bind to MonoBehaviours in that namespace (eg specify 'MyGame.UI' to only bind MyGame.UI.PlayScreen node to 'PlayScreen')")]
         public string ScreenBindingNamespace="";

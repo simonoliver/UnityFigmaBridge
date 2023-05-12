@@ -37,10 +37,11 @@ namespace UnityFigmaBridge.Editor.Nodes
                 createdPages.Add((figmaCanvasNode,pageGameObject));
             }
             
+            // Save prefab for each page
             for (var i = 0; i < createdPages.Count; i++)
             {
                 if (!downloadPageIdList.Contains(createdPages[i].Item1.id)) continue;
-                SaveFigmaPageAsPrefab(createdPages[i].Item1, createdPages[i].Item2,figmaImportProcessData);
+               SaveFigmaPageAsPrefab(createdPages[i].Item1, createdPages[i].Item2,figmaImportProcessData);
             }
             
             // Destroy all page objects
@@ -48,6 +49,15 @@ namespace UnityFigmaBridge.Editor.Nodes
             {
                 Object.DestroyImmediate(createdPage.Item2);
             }
+            
+            // Instantiate all components
+            ComponentManager.InstantiateAllComponentPrefabs(figmaImportProcessData);
+
+            // Remove all temporary components that were created along the way
+            ComponentManager.RemoveAllTemporaryNodeComponents(figmaImportProcessData);
+            
+            // At the very end, we want to apply figmaNode behaviour where required
+            BehaviourBindingManager.BindBehaviours(figmaImportProcessData);
         }
 
 
@@ -77,15 +87,6 @@ namespace UnityFigmaBridge.Editor.Nodes
                     BuildFigmaNode(childNode, pageTransform, pageNode, 0, figmaImportProcessData, includedPageObject, false );
             }
 
-            // Instantiate all components
-            ComponentManager.InstantiateAllComponentPrefabs(figmaImportProcessData);
-
-            // Remove all temporary components that were created along the way
-            ComponentManager.RemoveAllTemporaryNodeComponents(figmaImportProcessData);
-            
-            // At the very end, we want to apply figmaNode behaviour where required
-            BehaviourBindingManager.BindBehaviours(figmaImportProcessData);
-            
             return pageGameObject;
         }
 
@@ -126,8 +127,12 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Add on a figmaNode to store the reference to the FIGMA figmaNode id
             nodeGameObject.AddComponent<FigmaNodeObject>().NodeId=figmaNode.id;
 
-            // If this is a Figma mask object we'll add a mask component 
-            if (figmaNode.isMask) nodeGameObject.AddComponent<Mask>();
+            // If this is a Figma mask object we'll add a mask component (but dont render) 
+            if (figmaNode.isMask)
+            {
+                var mask=nodeGameObject.AddComponent<Mask>();
+                mask.showMaskGraphic = false;
+            }
             
             // For component instances, we want to check if there is an existing definition
             // If so, we wont create the full node, but mark it with a "component node marker" component
@@ -287,8 +292,9 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Increment count to ensure no naming collisions
             figmaImportProcessData.PagePrefabNameCounter[node.name] = pageNameCount + 1;
 
-            PrefabUtility.SaveAsPrefabAssetAndConnect(pageGameObject,
+            var pagePrefab = PrefabUtility.SaveAsPrefabAssetAndConnect(pageGameObject,
                 FigmaPaths.GetPathForPagePrefab(node,pageNameCount),InteractionMode.UserAction);
+            figmaImportProcessData.PagePrefabs.Add(pagePrefab);
         }
 
 
