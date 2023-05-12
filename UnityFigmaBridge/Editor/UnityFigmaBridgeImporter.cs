@@ -51,6 +51,12 @@ namespace UnityFigmaBridge.Editor
         /// </summary>
         private static PrototypeFlowController s_PrototypeFlowController;
 
+        [MenuItem("Figma Bridge/Sync Document")]
+        static void Sync()
+        {
+            SyncAsync();
+        }
+        
         private static async void SyncAsync()
         {
             var requirementsMet = CheckRequirements();
@@ -97,12 +103,6 @@ namespace UnityFigmaBridge.Editor
 
             await ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodeList);
             
-        }
-
-        [MenuItem("Figma Bridge/Sync Document")]
-        static void Sync()
-        {
-            SyncAsync();
         }
 
         /// <summary>
@@ -314,6 +314,9 @@ namespace UnityFigmaBridge.Editor
         private static async Task ImportDocument(string fileId, FigmaFile figmaFile, List<Node> downloadPageNodeList)
         {
 
+            // Build a list of page IDs to download
+            var downloadPageIdList = downloadPageNodeList.Select(p => p.id).ToList();
+            
             // Ensure we have all required directories, and remove existing files
             // TODO - Once we move to processing only differences, we won't remove existing files
             FigmaPaths.CreateRequiredDirectories();
@@ -350,7 +353,7 @@ namespace UnityFigmaBridge.Editor
             
             // Some of the nodes, we'll want to identify to use Figma server side rendering (eg vector shapes, SVGs)
             // First up create a list of nodes we'll substitute with rendered images
-            var serverRenderNodes = FigmaDataUtils.FindAllServerRenderNodesInFile(figmaFile,externalComponentList,downloadPageNodeList);
+            var serverRenderNodes = FigmaDataUtils.FindAllServerRenderNodesInFile(figmaFile,externalComponentList,downloadPageIdList);
             
             // Request a render of these nodes on the server if required
             FigmaServerRenderData serverRenderData=null;
@@ -375,7 +378,7 @@ namespace UnityFigmaBridge.Editor
             }
 
             // Track fills that are actually used. This is needed as FIGMA has a way of listing any bitmap used rather than active 
-            var foundImageFills = FigmaDataUtils.GetAllImageFillIdsFromFile(figmaFile);
+            var foundImageFills = FigmaDataUtils.GetAllImageFillIdsFromFile(figmaFile,downloadPageIdList);
             
             // Get image fill data for the document (list of urls to download any bitmap data used)
             FigmaImageFillData activeFigmaImageFillData; 
