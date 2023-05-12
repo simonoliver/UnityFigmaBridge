@@ -74,7 +74,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             foreach (var childNode in pageNode.children)
             {
                 if (CheckNodeValidForGeneration(childNode,figmaImportProcessData))
-                    BuildFigmaNode(childNode, pageTransform, pageNode, 0, figmaImportProcessData);
+                    BuildFigmaNode(childNode, pageTransform, pageNode, 0, figmaImportProcessData, includedPageObject, false );
             }
 
             // Instantiate all components
@@ -142,6 +142,8 @@ namespace UnityFigmaBridge.Editor.Nodes
                 }
                 // Otherwise we assume we are missing the definition, so just create as normal
             }
+
+            if (figmaNode.type == NodeType.COMPONENT) withinComponentDefinition = true;
             
             if (matchingServerRenderEntry!=null)
             {
@@ -177,7 +179,8 @@ namespace UnityFigmaBridge.Editor.Nodes
                 Mask activeMaskObject=null;
                 foreach (var childNode in figmaNode.children)
                 {
-                    var childGameObject = BuildFigmaNode(childNode, nodeRectTransform, figmaNode, nodeRecursionDepth + 1, figmaImportProcessData);
+                    var childGameObject = BuildFigmaNode(childNode, nodeRectTransform, figmaNode,
+                        nodeRecursionDepth + 1, figmaImportProcessData,includedPageObject, withinComponentDefinition);
                     if (childGameObject == null) continue;
                     // Check if this object has a mask component. If so, set as the active mask component
                     var childGameObjectMask = childGameObject.GetComponent<Mask>();
@@ -206,9 +209,9 @@ namespace UnityFigmaBridge.Editor.Nodes
 
             switch (figmaNode.type)
             {
-                // If the parent is either a canvas or section, treat as a flowScreen and create a prefab
+                // If the parent is either a canvas or section, treat as a flowScreen and create a prefab. Only do this if it's on a generated page
                 case NodeType.FRAME:
-                    if (FigmaDataUtils.IsScreenNode(figmaNode,parentFigmaNode))
+                    if (includedPageObject && FigmaDataUtils.IsScreenNode(figmaNode,parentFigmaNode))
                     {
                         SaveFigmaScreenAsPrefab(figmaNode, parentFigmaNode, nodeRectTransform, figmaImportProcessData);
                     }
