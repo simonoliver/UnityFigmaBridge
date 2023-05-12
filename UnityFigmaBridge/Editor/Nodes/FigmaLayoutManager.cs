@@ -85,6 +85,13 @@ namespace UnityFigmaBridge.Editor.Nodes
                     layoutGroup= UnityUiUtils.GetOrAddComponent<HorizontalLayoutGroup>(targetLayoutObject);
                     break;
             }
+
+            layoutGroup.childControlHeight = true;
+            layoutGroup.childControlWidth = true;
+            layoutGroup.childForceExpandHeight = false;
+            layoutGroup.childForceExpandWidth = false;
+            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+
             layoutGroup.padding = new RectOffset(Mathf.RoundToInt(node.paddingLeft), Mathf.RoundToInt(node.paddingRight),
                 Mathf.RoundToInt(node.paddingTop), Mathf.RoundToInt(node.paddingBottom));
             layoutGroup.spacing = node.itemSpacing;
