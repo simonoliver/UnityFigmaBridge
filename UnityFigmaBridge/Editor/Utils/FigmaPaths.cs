@@ -107,7 +107,7 @@ namespace UnityFigmaBridge.Editor.Utils
             return System.Text.RegularExpressions.Regex.Replace(name, invalidRegStr, "_");
         }
 
-        public static void CreateRequiredDirectories(List<Node> downloadPageNodeList)
+        public static void CreateRequiredDirectories()
         {
             
             //  Create directory for pages if required 
@@ -117,10 +117,8 @@ namespace UnityFigmaBridge.Editor.Utils
             }
 
             // Remove existing prefabs for pages
-            var downloadPageNameList = downloadPageNodeList.Select(p => p.name).ToList();
             foreach (var file in new DirectoryInfo(FigmaPagePrefabFolder).GetFiles())
             {
-                if (!downloadPageNameList.Contains(file.Name)) continue;
                 file.Delete(); 
             }
             

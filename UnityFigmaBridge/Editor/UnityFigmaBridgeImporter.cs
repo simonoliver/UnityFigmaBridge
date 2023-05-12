@@ -318,8 +318,9 @@ namespace UnityFigmaBridge.Editor
         private static async Task ImportDocument(string fileId, FigmaFile figmaFile, List<Node> downloadPageNodeList)
         {
 
-            // Ensure we have all required directories
-            FigmaPaths.CreateRequiredDirectories(downloadPageNodeList);
+            // Ensure we have all required directories, and remove existing files
+            // TODO - Once we move to processing only differences, we won't remove existing files
+            FigmaPaths.CreateRequiredDirectories();
             
             // Next build a list of all externally referenced components not included in the document (eg
             // from external libraries) and download
@@ -353,7 +354,7 @@ namespace UnityFigmaBridge.Editor
             
             // Some of the nodes, we'll want to identify to use Figma server side rendering (eg vector shapes, SVGs)
             // First up create a list of nodes we'll substitute with rendered images
-            var serverRenderNodes = FigmaDataUtils.FindAllServerRenderNodesInFile(figmaFile,externalComponentList);
+            var serverRenderNodes = FigmaDataUtils.FindAllServerRenderNodesInFile(figmaFile,externalComponentList,downloadPageNodeList);
             
             // Request a render of these nodes on the server if required
             FigmaServerRenderData serverRenderData=null;

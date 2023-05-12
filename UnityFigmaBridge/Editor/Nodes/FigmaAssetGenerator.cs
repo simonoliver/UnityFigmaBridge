@@ -25,16 +25,18 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <param name="figmaImportProcessData"></param>
         public static void BuildFigmaFile(Canvas rootCanvas, FigmaImportProcessData figmaImportProcessData)
         {
+            // Save prefab for each page
+            var downloadPageIdList = figmaImportProcessData.SelectedPagesForImport.Select(p => p.id).ToList();
+            
             // Cycle through all pages and create
             var createdPages = new List<(Node,GameObject)>();
             foreach (var figmaCanvasNode in figmaImportProcessData.SourceFile.document.children)
             {
-                var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData);
+                bool includedPageObject = downloadPageIdList.Contains(figmaCanvasNode.id);
+                var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData,includedPageObject);
                 createdPages.Add((figmaCanvasNode,pageGameObject));
             }
-
-            // Save prefab for each page
-            var downloadPageIdList = figmaImportProcessData.SelectedPagesForImport.Select(p => p.id).ToList();
+            
             for (var i = 0; i < createdPages.Count; i++)
             {
                 if (!downloadPageIdList.Contains(createdPages[i].Item1.id)) continue;
@@ -48,7 +50,6 @@ namespace UnityFigmaBridge.Editor.Nodes
             }
         }
 
-       
 
         /// <summary>
         /// Builds an individual page (Canvas object in Figma API)
@@ -56,8 +57,10 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <param name="pageNode"></param>
         /// <param name="parentTransform"></param>
         /// <param name="figmaImportProcessData"></param>
+        /// <param name="includedPageObject"></param>
         /// <returns></returns>
-        private static GameObject BuildFigmaPage(Node pageNode, RectTransform parentTransform, FigmaImportProcessData figmaImportProcessData)
+        private static GameObject BuildFigmaPage(Node pageNode, RectTransform parentTransform,
+            FigmaImportProcessData figmaImportProcessData, bool includedPageObject)
         {
             var pageGameObject = new GameObject(pageNode.name, typeof(RectTransform));
             var pageTransform = pageGameObject.transform as RectTransform;
@@ -100,10 +103,12 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <param name="parentFigmaNode">The parent figma node</param>
         /// <param name="nodeRecursionDepth">Depth of recursion</param>
         /// <param name="figmaImportProcessData"></param>
+        /// <param name="includedPageObject"></param>
+        /// <param name="withinComponentDefinition"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         private static GameObject BuildFigmaNode(Node figmaNode, RectTransform parentTransform,  Node parentFigmaNode,
-            int nodeRecursionDepth, FigmaImportProcessData figmaImportProcessData)
+            int nodeRecursionDepth, FigmaImportProcessData figmaImportProcessData,bool includedPageObject, bool withinComponentDefinition)
         {
 
             // Create a gameObject for this figma node and parent to parent transform
