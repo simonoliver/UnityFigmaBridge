@@ -92,10 +92,20 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             {
                 throw new Exception($"Error downloading FIGMA document: {webRequest.error} url - {url}");
             }
+
             try
             {
+                // Create a settings object to ignore missing members and null fields that sometimes come from Figma
+                JsonSerializerSettings settings = new JsonSerializerSettings()
+                {
+                    DefaultValueHandling = DefaultValueHandling.Ignore,
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    NullValueHandling = NullValueHandling.Ignore,
+                };
+                
                 // Deserialize the document
-                figmaFile = JsonConvert.DeserializeObject<FigmaFile>(webRequest.downloadHandler.text);
+                figmaFile = JsonConvert.DeserializeObject<FigmaFile>(webRequest.downloadHandler.text, settings);
+
                 Debug.Log($"Figma file downloaded, name {figmaFile.name}");
             }
             catch (Exception e)
