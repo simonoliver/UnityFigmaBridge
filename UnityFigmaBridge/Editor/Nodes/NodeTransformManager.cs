@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityFigmaBridge.Editor.FigmaApi;
 
 namespace UnityFigmaBridge.Editor.Nodes
@@ -33,6 +34,10 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Apply the "size" figmaNode from figma to set size
             targetRectTransform.sizeDelta = new Vector2(figmaNode.size.x, figmaNode.size.y);
 
+            //Add a layout element and set its preferred size
+            LayoutElement layoutElement = targetRectTransform.gameObject.AddComponent<LayoutElement>();
+            layoutElement.preferredWidth = figmaNode.size.x;
+            layoutElement.preferredHeight = figmaNode.size.y;
 
             // Apply constraints
             // Groups in Figma dont have their own constraints, so to setup effectively, we need to use the first child's constraints
@@ -121,7 +126,12 @@ namespace UnityFigmaBridge.Editor.Nodes
             
             // We'll use absolute bounding box size
             targetRectTransform.sizeDelta = new Vector2(figmaNode.absoluteBoundingBox.width, figmaNode.absoluteBoundingBox.height);
-            
+
+            //Add a layout element and set its preferred size
+            LayoutElement layoutElement = targetRectTransform.gameObject.AddComponent<LayoutElement>();
+            layoutElement.preferredWidth = figmaNode.absoluteBoundingBox.width;
+            layoutElement.preferredHeight = figmaNode.absoluteBoundingBox.height;
+
             // Position will be relative to parent absoluteBoundingBox (if it exists). Pages have no absoluteBoundingBox so assume pos of 0,0
             var figmaParentNodePosition = figmaParentNode.absoluteBoundingBox != null
                 ? new Vector2(figmaParentNode.absoluteBoundingBox.x, figmaParentNode.absoluteBoundingBox.y)
