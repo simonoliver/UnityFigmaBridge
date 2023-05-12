@@ -79,18 +79,33 @@ namespace UnityFigmaBridge.Editor.Components
         /// <param name="figmaImportProcessData"></param>
         public static void InstantiateAllComponentPrefabs(FigmaImportProcessData figmaImportProcessData)
         {
+
             // Instantiate components "within" components (nested components)
-            foreach (var componentPrefab in figmaImportProcessData.ComponentData.AllComponentPrefabs)
-                InstantiateComponentPrefabs(componentPrefab, figmaImportProcessData);
-            
-            // Instantiate components within screens 
-            foreach (var framePrefab in figmaImportProcessData.ScreenPrefabs.Where(framePrefab => framePrefab!=null))
-                InstantiateComponentPrefabs(framePrefab, figmaImportProcessData);
-            
-            // Instantiate components within pages 
-            foreach (var pagePrefab in figmaImportProcessData.ScreenPrefabs.Where(pagePrefab => pagePrefab!=null))
-                InstantiateComponentPrefabs(pagePrefab, figmaImportProcessData);
+            InstantiateComponentsInPrefabSet(figmaImportProcessData.ComponentData.AllComponentPrefabs,figmaImportProcessData,"Connecting nested components");
+            // Instantiate components within screens
+            InstantiateComponentsInPrefabSet(figmaImportProcessData.ScreenPrefabs,figmaImportProcessData,"Connecting screen components");
+            // Instantiate components within pages
+            InstantiateComponentsInPrefabSet(figmaImportProcessData.PagePrefabs,figmaImportProcessData,"Connecting page components");
         }
+
+        /// <summary>
+        /// Connects a set of components and provides feedback on progress
+        /// </summary>
+        /// <param name="prefabSet"></param>
+        /// <param name="figmaImportProcessData"></param>
+        /// <param name="progressTitle"></param>
+        private static void InstantiateComponentsInPrefabSet(List<GameObject> prefabSet,FigmaImportProcessData figmaImportProcessData, string progressTitle)
+        {
+            for (var i = 0; i < prefabSet.Count; i++)
+            {
+                var targetPrefab = prefabSet[i];
+                if (targetPrefab==null) continue;
+                EditorUtility.DisplayProgressBar(UnityFigmaBridgeImporter.PROGRESS_BOX_TITLE, $"{progressTitle} {i}/{prefabSet.Count} ", (float)i/prefabSet.Count);
+                InstantiateComponentPrefabs(targetPrefab, figmaImportProcessData);
+            }
+        }
+        
+        
         
         /// <summary>
         /// Instantiates prefabs within a given prefab

@@ -36,6 +36,8 @@ namespace UnityFigmaBridge.Editor
         /// </summary>
         private const string FIGMA_PERSONAL_ACCESS_TOKEN_PREF_KEY = "FIGMA_PERSONAL_ACCESS_TOKEN";
 
+        public const string PROGRESS_BOX_TITLE = "Importing Figma Document";
+
         /// <summary>
         /// Cached personal access token, retrieved from PlayerPrefs
         /// </summary>
@@ -291,7 +293,7 @@ namespace UnityFigmaBridge.Editor
         public static async Task<FigmaFile> DownloadFigmaDocument(string fileId)
         {
             // Download figma document
-            EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading file", 0);
+            EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading file", 0);
             try
             {
                 var figmaTask = FigmaApiUtils.GetFigmaDocument(fileId, s_PersonalAccessToken, true);
@@ -331,7 +333,7 @@ namespace UnityFigmaBridge.Editor
             FigmaFileNodes activeExternalComponentsData=null;
             if (externalComponentList.Count > 0)
             {
-                EditorUtility.DisplayProgressBar("Importing Figma Document", $"Getting external component data", 0);
+                EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Getting external component data", 0);
                 try
                 {
                     var figmaTask = FigmaApiUtils.GetFigmaFileNodes(fileId, s_PersonalAccessToken,externalComponentList);
@@ -361,7 +363,7 @@ namespace UnityFigmaBridge.Editor
             {
                 var allNodeIds = serverRenderNodes.Select(serverRenderNode => serverRenderNode.SourceNode.id).ToList();
                 var serverNodeCsvList = string.Join(",", allNodeIds);
-                EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading server-rendered images", 0);
+                EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading server-rendered images", 0);
                 try
                 {
                     var figmaTask = FigmaApiUtils.GetFigmaServerRenderData(fileId, s_PersonalAccessToken,
@@ -382,7 +384,7 @@ namespace UnityFigmaBridge.Editor
             
             // Get image fill data for the document (list of urls to download any bitmap data used)
             FigmaImageFillData activeFigmaImageFillData; 
-            EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading image fill data", 0);
+            EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading image fill data", 0);
             try
             {
                 var figmaTask = FigmaApiUtils.GetDocumentImageFillData(fileId, s_PersonalAccessToken);

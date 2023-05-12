@@ -33,6 +33,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             foreach (var figmaCanvasNode in figmaImportProcessData.SourceFile.document.children)
             {
                 bool includedPageObject = downloadPageIdList.Contains(figmaCanvasNode.id);
+                EditorUtility.DisplayProgressBar(UnityFigmaBridgeImporter.PROGRESS_BOX_TITLE, $"Generating Page {figmaCanvasNode.name} ", 0);
                 var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData,includedPageObject);
                 createdPages.Add((figmaCanvasNode,pageGameObject));
             }
@@ -72,6 +73,7 @@ namespace UnityFigmaBridge.Editor.Nodes
         private static GameObject BuildFigmaPage(Node pageNode, RectTransform parentTransform,
             FigmaImportProcessData figmaImportProcessData, bool includedPageObject)
         {
+           
             var pageGameObject = new GameObject(pageNode.name, typeof(RectTransform));
             var pageTransform = pageGameObject.transform as RectTransform;
             pageTransform.SetParent(parentTransform, false);
@@ -83,6 +85,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Generate all child nodes. 
             foreach (var childNode in pageNode.children)
             {
+               
                 if (CheckNodeValidForGeneration(childNode,figmaImportProcessData))
                     BuildFigmaNode(childNode, pageTransform, pageNode, 0, figmaImportProcessData, includedPageObject, false );
             }

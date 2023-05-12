@@ -67,6 +67,18 @@ the specified screen as per the Figma document. Currently there is a dew
 * Enter your Personal Access Token (this will be stored in your Player Prefs for future use)
 * It will ask if you want to use the current scene to generate prototype flow - Click yes
 
+## Selecting Figma Pages
+
+If you only want to import specific pages from the Figma document (for example if you use a page for design notes or
+brainstorming), you can tick "Select Pages to import" in the settings file. It will then download the document
+and show you a list of pages to choose from. This can help speed up import time and reduce the number of
+assets imported. Any page that is not selected will have the following rules:
+
+* Components will still be generated (in case they are used on other pages)
+* Screens will not be generated
+* Image Fills will not be downloaded (unless within a component)
+* Server side images will not be rendered (unless within a component)
+
 ## How Figma objects map to Unity
 
 | Node Type               | Unity Mapping                                                                                                          |
