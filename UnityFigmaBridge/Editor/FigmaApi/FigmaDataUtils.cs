@@ -88,9 +88,37 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             return outputArray;
         }
         
-       
+        
+        /// <summary>
+        /// Create a fast-lookup dictionary
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
+        public static Dictionary<string, Node> BuildNodeLookupDictionary(FigmaFile file)
+        {
+            var dictionary = new Dictionary<string, Node>();
+            PopulateDictionaryWithNodes(dictionary, file.document);
+            return dictionary;
+        }
+
+        /// <summary>
+        /// Recursively populate dictionary with all nodes in a figma file
+        /// </summary>
+        /// <param name="dictionary"></param>
+        /// <param name="node"></param>
+        private static void PopulateDictionaryWithNodes(Dictionary<string, Node> dictionary, Node node)
+        {
+            dictionary[node.id] = node;
+            if (node.children == null) return;
+            foreach (var childNode in node.children)
+            {
+                PopulateDictionaryWithNodes(dictionary, childNode);
+            }
+        }
+
         /// <summary>
         /// Searches a Figma file to find a specific figmaNode
+        /// Note - this is slow, so avoid if possible
         /// </summary>
         /// <param name="file"></param>
         /// <param name="nodeId"></param>
@@ -99,6 +127,9 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         {
             return GetFigmaNodeInChildren(file.document,nodeId);
         }
+
+
+      
 
         /// <summary>
         /// Find a specific figmaNode within figma figmaNode tree (recursive)

@@ -17,9 +17,18 @@ namespace UnityFigmaBridge.Editor.Settings
         {
             var targetSettingsObject = target as UnityFigmaBridgeSettings;
             var onlyImportPages= targetSettingsObject.OnlyImportSelectedPages;
+            var preEditUrl= targetSettingsObject.DocumentUrl;
             base.OnInspectorGUI();
-            
-            if (targetSettingsObject.OnlyImportSelectedPages != onlyImportPages)
+            // If the URL has changed, we want to reset the select pages to off and clear
+            if (targetSettingsObject.DocumentUrl != preEditUrl)
+            {
+                if (targetSettingsObject.OnlyImportSelectedPages)
+                {
+                    targetSettingsObject.OnlyImportSelectedPages = false;
+                    targetSettingsObject.PageDataList.Clear();
+                }
+            }
+            else if (targetSettingsObject.OnlyImportSelectedPages != onlyImportPages)
             {
                 if (targetSettingsObject.OnlyImportSelectedPages)
                 {
@@ -31,7 +40,6 @@ namespace UnityFigmaBridge.Editor.Settings
                     // Reset list
                     targetSettingsObject.PageDataList.Clear();
                 }
-                Debug.Log("Settings changed!");
             }
 
             if (targetSettingsObject.OnlyImportSelectedPages)

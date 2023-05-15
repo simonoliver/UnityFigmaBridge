@@ -161,9 +161,9 @@ namespace UnityFigmaBridge.Editor.Components
                 // Copy transform order
                 addedReplacementComponent.transform.SetSiblingIndex(placeholder.transform.GetSiblingIndex()); // Put at same order
                 // Get the Node data for this component
-                var nodeData = FigmaDataUtils.GetFigmaNodeWithId(figmaImportProcessData.SourceFile, placeholder.NodeId); 
+                var nodeData = figmaImportProcessData.NodeLookupDictionary[placeholder.NodeId]; 
                 // Get parent node data for the original node
-                var parentNodeData = FigmaDataUtils.GetFigmaNodeWithId(figmaImportProcessData.SourceFile, placeholder.ParentNodeId);
+                var parentNodeData =  figmaImportProcessData.NodeLookupDictionary[placeholder.ParentNodeId];
                 if (nodeData != null)
                 {
                     // Recursively apply all properties for this node object (such as text, image fills etc)

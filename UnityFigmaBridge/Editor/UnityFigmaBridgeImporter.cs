@@ -429,6 +429,7 @@ namespace UnityFigmaBridge.Editor
                 FontMap = fontMap,
                 PrototypeFlowStartPoints = FigmaDataUtils.GetAllPrototypeFlowStartingPoints(figmaFile),
                 SelectedPagesForImport = downloadPageNodeList,
+                NodeLookupDictionary = FigmaDataUtils.BuildNodeLookupDictionary(figmaFile)
             };
             
             

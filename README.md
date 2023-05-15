@@ -69,6 +69,8 @@ the specified screen as per the Figma document. Currently there is a dew
 
 ## Selecting Figma Pages
 
+![SelectPage.png](Docs/SelectPage.png)
+
 If you only want to import specific pages from the Figma document (for example if you use a page for design notes or
 brainstorming), you can tick "Select Pages to import" in the settings file. It will then download the document
 and show you a list of pages to choose from. This can help speed up import time and reduce the number of

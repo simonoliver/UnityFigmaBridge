@@ -71,6 +71,11 @@ namespace UnityFigmaBridge.Editor
         /// List of all page nodes to import
         /// </summary>
         public List<Node> SelectedPagesForImport = new();
+        
+        /// <summary>
+        /// Allow faster lookup of nodes by ID
+        /// </summary>
+        public Dictionary<string,Node> NodeLookupDictionary = new();
     }
 
     /// <summary>
