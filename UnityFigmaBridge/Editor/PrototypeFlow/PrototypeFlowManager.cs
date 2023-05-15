@@ -51,7 +51,8 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
             // Implement button if it has a prototype connection attached
             if (string.IsNullOrEmpty(node.transitionNodeID)) return;
             
-            var prototypeFlowButton = nodeGameObject.AddComponent<FigmaPrototypeFlowButton>();
+            var prototypeFlowButton = nodeGameObject.GetComponent<FigmaPrototypeFlowButton>();
+            if (prototypeFlowButton == null) prototypeFlowButton = nodeGameObject.AddComponent<FigmaPrototypeFlowButton>();
             prototypeFlowButton.TargetScreenNodeId = node.transitionNodeID;
             // Future options to add transition information
         }
