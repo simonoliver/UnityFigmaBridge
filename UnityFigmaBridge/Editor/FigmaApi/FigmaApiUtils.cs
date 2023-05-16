@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityFigmaBridge.Editor.Settings;
 using UnityFigmaBridge.Editor.Utils;
 
 namespace UnityFigmaBridge.Editor.FigmaApi
@@ -113,7 +114,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 throw new Exception($"Problem decoding Figma document JSON {e.ToString()}");
             }
 
-            if (writeFile) File.WriteAllText(WRITE_FILE_PATH, webRequest.downloadHandler.text);
+            if (writeFile) File.WriteAllText("Assets\\" + WRITE_FILE_PATH, webRequest.downloadHandler.text);
             return figmaFile;
         }
 
@@ -287,7 +288,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Download required files and process
         /// </summary>
         /// <param name="downloadItems"></param>
-        public static async Task DownloadFiles(List<FigmaDownloadQueueItem> downloadItems)
+        public static async Task DownloadFiles(List<FigmaDownloadQueueItem> downloadItems, UnityFigmaBridgeSettings settings)
         {
             var downloadCount = downloadItems.Count;
             var downloadIndex = 0;
@@ -326,9 +327,14 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                     switch (downloadItem.FileType)
                     {
                         case FigmaDownloadQueueItem.FigmaFileType.ImageFill:
-                            // For image fills, we want to repeat
-                            textureImporter.wrapMode = TextureWrapMode.Repeat;
+                            //If the settings are set to clamp, then we want to clamp the texture, otherwise repeat it.
+                            textureImporter.wrapMode = settings.clampImportedImages ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
                             break;
+                        case FigmaDownloadQueueItem.FigmaFileType.ServerRenderedImage:
+                            // For server rendered images we want to clamp the texture
+                            textureImporter.wrapMode = TextureWrapMode.Clamp;
+                            break;
+                            
                     }
                     
                     textureImporter.SaveAndReimport();
