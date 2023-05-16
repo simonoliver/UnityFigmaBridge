@@ -320,6 +320,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                     textureImporter.alphaIsTransparency = true;
                     textureImporter.mipmapEnabled = true; // We'll enable mip maps to stop issues at lower resolutions
                     textureImporter.textureCompression = TextureImporterCompression.Uncompressed;
+                    textureImporter.sRGBTexture = QualitySettings.activeColorSpace == ColorSpace.Gamma;
 
 
                     switch (downloadItem.FileType)
