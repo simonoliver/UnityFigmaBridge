@@ -31,6 +31,19 @@ namespace UnityFigmaBridge.Editor.Nodes
                 targetRectTransform.localRotation = Quaternion.Euler(0, 0, rotation);
             }
 
+            if (figmaNode.relativeTransform[0,0] < 0)
+            {
+                //horizontal mirror
+                targetRectTransform.localScale = new Vector3(-targetRectTransform.localScale.x, targetRectTransform.localScale.y, targetRectTransform.localScale.z);
+                targetRectTransform.localRotation = Quaternion.Euler(targetRectTransform.transform.rotation.eulerAngles.x, targetRectTransform.transform.rotation.eulerAngles.y, targetRectTransform.transform.rotation.eulerAngles.z - 180);
+            }
+            if (figmaNode.relativeTransform[1,1] < 0)
+            {
+                //vertical mirror
+                targetRectTransform.localScale = new Vector3(targetRectTransform.localScale.x, -targetRectTransform.localScale.y, targetRectTransform.localScale.z);
+
+            }
+
             // Apply the "size" figmaNode from figma to set size
             targetRectTransform.sizeDelta = new Vector2(figmaNode.size.x, figmaNode.size.y);
 
@@ -38,6 +51,9 @@ namespace UnityFigmaBridge.Editor.Nodes
             LayoutElement layoutElement = targetRectTransform.gameObject.AddComponent<LayoutElement>();
             layoutElement.preferredWidth = figmaNode.size.x;
             layoutElement.preferredHeight = figmaNode.size.y;
+
+            layoutElement.minHeight = figmaNode.absoluteBoundingBox.height;
+            layoutElement.minWidth = figmaNode.absoluteBoundingBox.width;
 
             // Apply constraints
             // Groups in Figma dont have their own constraints, so to setup effectively, we need to use the first child's constraints
@@ -131,6 +147,9 @@ namespace UnityFigmaBridge.Editor.Nodes
             LayoutElement layoutElement = targetRectTransform.gameObject.AddComponent<LayoutElement>();
             layoutElement.preferredWidth = figmaNode.absoluteBoundingBox.width;
             layoutElement.preferredHeight = figmaNode.absoluteBoundingBox.height;
+
+            layoutElement.minHeight = figmaNode.absoluteBoundingBox.height;
+            layoutElement.minWidth = figmaNode.absoluteBoundingBox.width;
 
             // Position will be relative to parent absoluteBoundingBox (if it exists). Pages have no absoluteBoundingBox so assume pos of 0,0
             var figmaParentNodePosition = figmaParentNode.absoluteBoundingBox != null
