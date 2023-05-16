@@ -343,9 +343,9 @@ namespace UnityFigmaBridge.Editor
                 FigmaApiUtils.GenerateDownloadQueue(activeFigmaImageFillData,foundImageFills, serverRenderData, serverRenderNodes);
 
             // Download all required files
-            await FigmaApiUtils.DownloadFiles(downloadList);
+            await FigmaApiUtils.DownloadFiles(downloadList, s_UnityFigmaBridgeSettings);
             
-            
+
             // Generate font mapping data
             var figmaFontMapTask = FontManager.GenerateFontMapForDocument(figmaFile,
                 s_UnityFigmaBridgeSettings.EnableGoogleFontsDownloads);
