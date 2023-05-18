@@ -99,7 +99,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 // Create a settings object to ignore missing members and null fields that sometimes come from Figma
                 JsonSerializerSettings settings = new JsonSerializerSettings()
                 {
-                    DefaultValueHandling = DefaultValueHandling.Ignore,
+                    DefaultValueHandling = DefaultValueHandling.Include,
                     MissingMemberHandling = MissingMemberHandling.Ignore,
                     NullValueHandling = NullValueHandling.Ignore,
                 };
