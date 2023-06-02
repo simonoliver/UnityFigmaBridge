@@ -39,6 +39,12 @@ namespace UnityFigmaBridge.Editor
         public const string PROGRESS_BOX_TITLE = "Importing Figma Document";
 
         /// <summary>
+        /// Figma imposes a limit on the number of images in a single batch. This is batch size
+        /// (This is a bit of a guess - 650 is rejected)
+        /// </summary>
+        private const int MAX_SERVER_RENDER_IMAGE_BATCH_SIZE = 300;
+
+        /// <summary>
         /// Cached personal access token, retrieved from PlayerPrefs
         /// </summary>
         private static string s_PersonalAccessToken;
@@ -358,24 +364,32 @@ namespace UnityFigmaBridge.Editor
             var serverRenderNodes = FigmaDataUtils.FindAllServerRenderNodesInFile(figmaFile,externalComponentList,downloadPageIdList);
             
             // Request a render of these nodes on the server if required
-            FigmaServerRenderData serverRenderData=null;
+            var serverRenderData=new List<FigmaServerRenderData>();
             if (serverRenderNodes.Count > 0)
             {
                 var allNodeIds = serverRenderNodes.Select(serverRenderNode => serverRenderNode.SourceNode.id).ToList();
-                var serverNodeCsvList = string.Join(",", allNodeIds);
-                EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading server-rendered images", 0);
-                try
+                // As the API has an upper limit of images that can be rendered in a single request, we'll need to batch
+                var batchCount = Mathf.CeilToInt((float)allNodeIds.Count / MAX_SERVER_RENDER_IMAGE_BATCH_SIZE);
+                for (var i = 0; i < batchCount; i++)
                 {
-                    var figmaTask = FigmaApiUtils.GetFigmaServerRenderData(fileId, s_PersonalAccessToken,
-                        serverNodeCsvList, s_UnityFigmaBridgeSettings.ServerRenderImageScale);
-                    await figmaTask;
-                    serverRenderData = figmaTask.Result;
-                }
-                catch (Exception e)
-                {
-                    EditorUtility.ClearProgressBar();
-                    ReportError("Error downloading Figma Server Render Data",e.ToString());
-                    return;
+                    var startIndex = i * MAX_SERVER_RENDER_IMAGE_BATCH_SIZE;
+                    var nodeBatch = allNodeIds.GetRange(startIndex,
+                        Mathf.Min(MAX_SERVER_RENDER_IMAGE_BATCH_SIZE, allNodeIds.Count - startIndex));
+                    var serverNodeCsvList = string.Join(",", nodeBatch);
+                    EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading server-rendered image data {i+1}/{batchCount}",(float)i/(float)batchCount);
+                    try
+                    {
+                        var figmaTask = FigmaApiUtils.GetFigmaServerRenderData(fileId, s_PersonalAccessToken,
+                            serverNodeCsvList, s_UnityFigmaBridgeSettings.ServerRenderImageScale);
+                        await figmaTask;
+                        serverRenderData.Add(figmaTask.Result);
+                    }
+                    catch (Exception e)
+                    {
+                        EditorUtility.ClearProgressBar();
+                        ReportError("Error downloading Figma Server Render Image Data", e.ToString());
+                        return;
+                    }
                 }
             }
 
