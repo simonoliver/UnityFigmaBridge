@@ -76,6 +76,7 @@ Shader "Figma/FigmaImageShader"
             #pragma multi_compile_local _ STROKE
             #pragma multi_compile_local _ SHAPE_RECTANGLE SHAPE_ELLIPSE SHAPE_STAR
             #pragma multi_compile_local _ ARC_ANGLE_RANGE
+            #pragma multi_compile_local _ CLAMP_TEXTURE
 
             struct appdata_t
             {
@@ -342,6 +343,12 @@ Shader "Figma/FigmaImageShader"
                 #endif
                 
                 half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd)*shapeColor;
+                #if CLAMP_TEXTURE
+                    // Calculate within bounds factor relative to 0..1 (without branching to keep performant)
+                    float withinBoundsFactor= 1.0f-step(IN.texcoord.x,0.0f) - step(1.0f, IN.texcoord.x)-step(IN.texcoord.y,0.0f)- step(1.0f, IN.texcoord.y);
+                    // Lerp to transparent if outside this range
+                    color=lerp(half4(0,0,0,0),color,withinBoundsFactor);
+                #endif
                 
                 #if SHAPE_ELLIPSE
                    #if STROKE

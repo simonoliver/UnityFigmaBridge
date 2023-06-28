@@ -36,10 +36,7 @@ namespace UnityFigmaBridge.Editor.Settings
         
         [Tooltip("If false, the generator will not attempt to build any nodes marked for export")]
         public bool GenerateNodesMarkedForExport = true;
-
-        [Tooltip("If true, all imported image fills will be set to 'clamp' rather than 'repeat.'")]
-        public bool clampImportedImages = true;
-
+        
         [Tooltip("If true, download only selected pages and screens")]
         public bool OnlyImportSelectedPages = false;
 

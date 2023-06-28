@@ -327,8 +327,8 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                     switch (downloadItem.FileType)
                     {
                         case FigmaDownloadQueueItem.FigmaFileType.ImageFill:
-                            //If the settings are set to clamp, then we want to clamp the texture, otherwise repeat it.
-                            textureImporter.wrapMode = settings.clampImportedImages ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+                            // We'll want to allow repeating textures to support "tile" mode
+                            textureImporter.wrapMode = TextureWrapMode.Repeat;
                             break;
                         case FigmaDownloadQueueItem.FigmaFileType.ServerRenderedImage:
                             // For server rendered images we want to clamp the texture

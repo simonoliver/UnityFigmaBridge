@@ -467,7 +467,10 @@ namespace UnityFigmaBridge.Runtime.UI
             
             // Second element is fill angle
             mat.SetKeyword(new LocalKeyword(baseMaterial.shader, "ARC_ANGLE_RANGE"),m_EllipseArcAngleRange.y<Mathf.PI*2.0f);
-           
+            
+            // We want to clamp if in fit mode (we'll lerp to a transparent colour if outside UV range 0..1)
+            mat.SetKeyword(new LocalKeyword(baseMaterial.shader, "CLAMP_TEXTURE"),m_ImageScaleMode== ImageScaleMode.Fit);
+            
             // Set gradient properties if required
             switch (m_Fill)
             {
