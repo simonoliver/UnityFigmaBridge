@@ -18,6 +18,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public static UnityEngine.Color GetUnityFillColor(Paint paint)
         {
             // Make sure 
+            if(paint != null && !paint.visible) return new UnityEngine.Color(0,0,0,0);
             return paint?.color == null ? new UnityEngine.Color(1,1,1,paint?.opacity ?? 1) : new UnityEngine.Color(paint.color.r, paint.color.g, paint.color.b, paint.color.a*paint.opacity);
         }
 

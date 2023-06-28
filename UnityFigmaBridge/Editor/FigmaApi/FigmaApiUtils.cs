@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityFigmaBridge.Editor.Settings;
 using UnityFigmaBridge.Editor.Utils;
 
 namespace UnityFigmaBridge.Editor.FigmaApi
@@ -92,10 +93,20 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             {
                 throw new Exception($"Error downloading FIGMA document: {webRequest.error} url - {url}");
             }
+
             try
             {
+                // Create a settings object to ignore missing members and null fields that sometimes come from Figma
+                JsonSerializerSettings settings = new JsonSerializerSettings()
+                {
+                    DefaultValueHandling = DefaultValueHandling.Include,
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    NullValueHandling = NullValueHandling.Ignore,
+                };
+                
                 // Deserialize the document
-                figmaFile = JsonConvert.DeserializeObject<FigmaFile>(webRequest.downloadHandler.text);
+                figmaFile = JsonConvert.DeserializeObject<FigmaFile>(webRequest.downloadHandler.text, settings);
+
                 Debug.Log($"Figma file downloaded, name {figmaFile.name}");
             }
             catch (Exception e)
@@ -103,7 +114,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 throw new Exception($"Problem decoding Figma document JSON {e.ToString()}");
             }
 
-            if (writeFile) File.WriteAllText(WRITE_FILE_PATH, webRequest.downloadHandler.text);
+            if (writeFile) File.WriteAllText("Assets\\" + WRITE_FILE_PATH, webRequest.downloadHandler.text);
             return figmaFile;
         }
 
@@ -277,7 +288,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Download required files and process
         /// </summary>
         /// <param name="downloadItems"></param>
-        public static async Task DownloadFiles(List<FigmaDownloadQueueItem> downloadItems)
+        public static async Task DownloadFiles(List<FigmaDownloadQueueItem> downloadItems, UnityFigmaBridgeSettings settings)
         {
             var downloadCount = downloadItems.Count;
             var downloadIndex = 0;
@@ -310,14 +321,20 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                     textureImporter.alphaIsTransparency = true;
                     textureImporter.mipmapEnabled = true; // We'll enable mip maps to stop issues at lower resolutions
                     textureImporter.textureCompression = TextureImporterCompression.Uncompressed;
+                    textureImporter.sRGBTexture = downloadItem.FileType == FigmaDownloadQueueItem.FigmaFileType.ServerRenderedImage;
 
 
                     switch (downloadItem.FileType)
                     {
                         case FigmaDownloadQueueItem.FigmaFileType.ImageFill:
-                            // For image fills, we want to repeat
-                            textureImporter.wrapMode = TextureWrapMode.Repeat;
+                            //If the settings are set to clamp, then we want to clamp the texture, otherwise repeat it.
+                            textureImporter.wrapMode = settings.clampImportedImages ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
                             break;
+                        case FigmaDownloadQueueItem.FigmaFileType.ServerRenderedImage:
+                            // For server rendered images we want to clamp the texture
+                            textureImporter.wrapMode = TextureWrapMode.Clamp;
+                            break;
+                            
                     }
                     
                     textureImporter.SaveAndReimport();
