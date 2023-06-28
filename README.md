@@ -211,7 +211,6 @@ Big thanks for  making those available online!
 * Stroke positions for shapes (outside/center)
 * Stroke positions for text (inside/center)
 * Dynamic creation of device fonts
-* Fit Image Modes
 * Video Fills
 * Star shapes only support five points and non-default radius (missing data from API)
 * Star shape only renders at uniform scale
