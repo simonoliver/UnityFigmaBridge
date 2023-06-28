@@ -25,19 +25,24 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <param name="figmaImportProcessData"></param>
         public static void BuildFigmaFile(Canvas rootCanvas, FigmaImportProcessData figmaImportProcessData)
         {
+            // Save prefab for each page
+            var downloadPageIdList = figmaImportProcessData.SelectedPagesForImport.Select(p => p.id).ToList();
+            
             // Cycle through all pages and create
             var createdPages = new List<(Node,GameObject)>();
             foreach (var figmaCanvasNode in figmaImportProcessData.SourceFile.document.children)
             {
-                var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData);
+                bool includedPageObject = downloadPageIdList.Contains(figmaCanvasNode.id);
+                EditorUtility.DisplayProgressBar(UnityFigmaBridgeImporter.PROGRESS_BOX_TITLE, $"Generating Page {figmaCanvasNode.name} ", 0);
+                var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData,includedPageObject);
                 createdPages.Add((figmaCanvasNode,pageGameObject));
             }
-
+            
             // Save prefab for each page
             for (var i = 0; i < createdPages.Count; i++)
             {
-                PrefabUtility.SaveAsPrefabAssetAndConnect(createdPages[i].Item2,
-                    FigmaPaths.GetPathForPagePrefab(createdPages[i].Item1),InteractionMode.UserAction);
+                if (!downloadPageIdList.Contains(createdPages[i].Item1.id)) continue;
+               SaveFigmaPageAsPrefab(createdPages[i].Item1, createdPages[i].Item2,figmaImportProcessData);
             }
             
             // Destroy all page objects
@@ -45,9 +50,17 @@ namespace UnityFigmaBridge.Editor.Nodes
             {
                 Object.DestroyImmediate(createdPage.Item2);
             }
+            
+            // Instantiate all components
+            ComponentManager.InstantiateAllComponentPrefabs(figmaImportProcessData);
+
+            // Remove all temporary components that were created along the way
+            ComponentManager.RemoveAllTemporaryNodeComponents(figmaImportProcessData);
+            
+            // At the very end, we want to apply figmaNode behaviour where required
+            BehaviourBindingManager.BindBehaviours(figmaImportProcessData);
         }
 
-        
 
         /// <summary>
         /// Builds an individual page (Canvas object in Figma API)
@@ -55,9 +68,12 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <param name="pageNode"></param>
         /// <param name="parentTransform"></param>
         /// <param name="figmaImportProcessData"></param>
+        /// <param name="includedPageObject"></param>
         /// <returns></returns>
-        private static GameObject BuildFigmaPage(Node pageNode, RectTransform parentTransform, FigmaImportProcessData figmaImportProcessData)
+        private static GameObject BuildFigmaPage(Node pageNode, RectTransform parentTransform,
+            FigmaImportProcessData figmaImportProcessData, bool includedPageObject)
         {
+           
             var pageGameObject = new GameObject(pageNode.name, typeof(RectTransform));
             var pageTransform = pageGameObject.transform as RectTransform;
             pageTransform.SetParent(parentTransform, false);
@@ -69,19 +85,11 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Generate all child nodes. 
             foreach (var childNode in pageNode.children)
             {
+               
                 if (CheckNodeValidForGeneration(childNode,figmaImportProcessData))
-                    BuildFigmaNode(childNode, pageTransform, pageNode, 0, figmaImportProcessData);
+                    BuildFigmaNode(childNode, pageTransform, pageNode, 0, figmaImportProcessData, includedPageObject, false );
             }
 
-            // Instantiate all components
-            ComponentManager.InstantiateAllComponentPrefabs(figmaImportProcessData);
-
-            // Remove all temporary components that were created along the way
-            ComponentManager.RemoveAllTemporaryNodeComponents(figmaImportProcessData);
-            
-            // At the very end, we want to apply figmaNode behaviour where required
-            BehaviourBindingManager.BindBehaviours(figmaImportProcessData);
-            
             return pageGameObject;
         }
 
@@ -92,19 +100,21 @@ namespace UnityFigmaBridge.Editor.Nodes
 
 
         /// <summary>
-        /// Build an individual Figma Node - this can be of any type, eg FRAME, RECTANGLE, ELLIPE, TEXT. Frames at depth 0 are treated as screens 
+        /// Build an individual Figma Node - this can be of any type, eg FRAME, RECTANGLE, ELLIPSE, TEXT. Frames at depth 0 are treated as screens 
         /// </summary>
         /// <param name="figmaNode">The source figma node</param>
         /// <param name="parentTransform">The parent transform figmaNode</param>
         /// <param name="parentFigmaNode">The parent figma node</param>
         /// <param name="nodeRecursionDepth">Depth of recursion</param>
         /// <param name="figmaImportProcessData"></param>
+        /// <param name="includedPageObject"></param>
+        /// <param name="withinComponentDefinition"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         private static GameObject BuildFigmaNode(Node figmaNode, RectTransform parentTransform,  Node parentFigmaNode,
-            int nodeRecursionDepth, FigmaImportProcessData figmaImportProcessData)
+            int nodeRecursionDepth, FigmaImportProcessData figmaImportProcessData,bool includedPageObject, bool withinComponentDefinition)
         {
-            
+
             // Create a gameObject for this figma node and parent to parent transform
             var nodeGameObject = new GameObject(figmaNode.name, typeof(RectTransform));
             nodeGameObject.transform.SetParent(parentTransform, false);
@@ -120,8 +130,12 @@ namespace UnityFigmaBridge.Editor.Nodes
             // Add on a figmaNode to store the reference to the FIGMA figmaNode id
             nodeGameObject.AddComponent<FigmaNodeObject>().NodeId=figmaNode.id;
 
-            // If this is a Figma mask object we'll add a mask component 
-            if (figmaNode.isMask) nodeGameObject.AddComponent<Mask>();
+            // If this is a Figma mask object we'll add a mask component (but dont render) 
+            if (figmaNode.isMask)
+            {
+                var mask=nodeGameObject.AddComponent<Mask>();
+                mask.showMaskGraphic = false;
+            }
             
             // For component instances, we want to check if there is an existing definition
             // If so, we wont create the full node, but mark it with a "component node marker" component
@@ -136,6 +150,8 @@ namespace UnityFigmaBridge.Editor.Nodes
                 }
                 // Otherwise we assume we are missing the definition, so just create as normal
             }
+
+            if (figmaNode.type == NodeType.COMPONENT) withinComponentDefinition = true;
             
             if (matchingServerRenderEntry!=null)
             {
@@ -152,7 +168,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                 return nodeGameObject;
             }
             
-            // Create any required unity components for this figmaNode. We seperate out application of properties to a seperate method
+            // Create any required unity components for this figmaNode. We separate out application of properties to a separate method
             FigmaNodeManager.CreateUnityComponentsForNode(nodeGameObject, figmaNode,figmaImportProcessData);
             
             // Apply properties for this figmaNode
@@ -171,8 +187,9 @@ namespace UnityFigmaBridge.Editor.Nodes
                 Mask activeMaskObject=null;
                 foreach (var childNode in figmaNode.children)
                 {
-                    var childGameObject = BuildFigmaNode(childNode, nodeRectTransform, figmaNode, nodeRecursionDepth + 1,
-                        figmaImportProcessData);
+                    var childGameObject = BuildFigmaNode(childNode, nodeRectTransform, figmaNode,
+                        nodeRecursionDepth + 1, figmaImportProcessData,includedPageObject, withinComponentDefinition);
+                    if (childGameObject == null) continue;
                     // Check if this object has a mask component. If so, set as the active mask component
                     var childGameObjectMask = childGameObject.GetComponent<Mask>();
                     if (childGameObjectMask != null) activeMaskObject = childGameObjectMask;
@@ -200,9 +217,12 @@ namespace UnityFigmaBridge.Editor.Nodes
 
             switch (figmaNode.type)
             {
-                // If the parent is either a canvas or section, treat as a flowScreen and create a prefab
-                case NodeType.FRAME when parentFigmaNode is { type: NodeType.CANVAS or NodeType.SECTION }:
-                    SaveFigmaScreenAsPrefab(figmaNode, parentFigmaNode, nodeRectTransform, figmaImportProcessData);
+                // If the parent is either a canvas or section, treat as a flowScreen and create a prefab. Only do this if it's on a generated page
+                case NodeType.FRAME:
+                    if (includedPageObject && FigmaDataUtils.IsScreenNode(figmaNode,parentFigmaNode))
+                    {
+                        SaveFigmaScreenAsPrefab(figmaNode, parentFigmaNode, nodeRectTransform, figmaImportProcessData);
+                    }
                     break;
                 // For the originally defined components, save as a prefab to be used for later instantiation
                 case NodeType.COMPONENT:
@@ -219,17 +239,18 @@ namespace UnityFigmaBridge.Editor.Nodes
             return nodeGameObject;
         }
 
-        
+
         /// <summary>
         /// Create a flowScreen prefab from a generated figma asset
         /// </summary>
         /// <param name="node"></param>
+        /// <param name="parentNode"></param>
         /// <param name="screenRectTransform"></param>
         /// <param name="figmaImportProcessData"></param>
         private static void SaveFigmaScreenAsPrefab(Node node, Node parentNode,RectTransform screenRectTransform, FigmaImportProcessData figmaImportProcessData)
         {
-            var screenNameCount = figmaImportProcessData.ScreenPrefabNameCounter.ContainsKey(node.name)
-                ? figmaImportProcessData.ScreenPrefabNameCounter[node.name] : 0;
+            var screenNameCount = figmaImportProcessData.ScreenPrefabNameCounter.TryGetValue(node.name, out var value)
+                ? value : 0;
             
             // Increment count to ensure no naming collisions
             figmaImportProcessData.ScreenPrefabNameCounter[node.name] = screenNameCount + 1;
@@ -250,7 +271,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                 {
                     FigmaScreenPrefab = screenPrefab,
                     FigmaNodeId = node.id,
-                    FigmaScreenName = FigmaPaths.GetScreenNameForNode(node, screenNameCount),
+                    FigmaScreenName = FigmaPaths.GetFileNameForNode(node, screenNameCount),
                     // Store the section that this is part of (if applicable)
                     ParentSectionNodeId = parentNode is { type: NodeType.SECTION } ? parentNode.id : string.Empty
                 });
@@ -258,6 +279,29 @@ namespace UnityFigmaBridge.Editor.Nodes
             
             figmaImportProcessData.ScreenPrefabs.Add(screenPrefab);
         }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="pageGameObject"></param>
+        /// <param name="figmaImportProcessData"></param>
+        private static void SaveFigmaPageAsPrefab(Node node, GameObject pageGameObject, FigmaImportProcessData figmaImportProcessData)
+        {
+           
+            var pageNameCount = figmaImportProcessData.PagePrefabNameCounter.TryGetValue(node.name, out var value)
+                ? value : 0;
+            
+            // Increment count to ensure no naming collisions
+            figmaImportProcessData.PagePrefabNameCounter[node.name] = pageNameCount + 1;
+
+            var pagePrefab = PrefabUtility.SaveAsPrefabAssetAndConnect(pageGameObject,
+                FigmaPaths.GetPathForPagePrefab(node,pageNameCount),InteractionMode.UserAction);
+            figmaImportProcessData.PagePrefabs.Add(pagePrefab);
+        }
+
+
+
 
 
         /// <summary>

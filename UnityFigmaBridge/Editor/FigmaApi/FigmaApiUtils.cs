@@ -238,7 +238,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <param name="serverRenderData"></param>
         /// <param name="serverRenderNodes"></param>
         /// <returns></returns>
-        public static List<FigmaDownloadQueueItem> GenerateDownloadQueue(FigmaImageFillData imageFillData,List<string> foundImageFills,FigmaServerRenderData serverRenderData,List<ServerRenderNodeData> serverRenderNodes)
+        public static List<FigmaDownloadQueueItem> GenerateDownloadQueue(FigmaImageFillData imageFillData,List<string> foundImageFills,List<FigmaServerRenderData> serverRenderData,List<ServerRenderNodeData> serverRenderNodes)
         {
             // Check if each image fill file has already been downloaded. If not, add to download list
             //Dictionary<string, string> filteredImageFillList = new Dictionary<string, string>();
@@ -258,9 +258,9 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             }
 
             // If required, process server render images
-            if (serverRenderData != null)
+           foreach (var serverRenderDataEntry in serverRenderData)
             {
-                foreach (var keyPair in serverRenderData.images)
+                foreach (var keyPair in serverRenderDataEntry.images)
                 {
                     if (string.IsNullOrEmpty(keyPair.Value))
                     {

@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -33,6 +36,14 @@ namespace UnityFigmaBridge.Editor
         /// </summary>
         private const string FIGMA_PERSONAL_ACCESS_TOKEN_PREF_KEY = "FIGMA_PERSONAL_ACCESS_TOKEN";
 
+        public const string PROGRESS_BOX_TITLE = "Importing Figma Document";
+
+        /// <summary>
+        /// Figma imposes a limit on the number of images in a single batch. This is batch size
+        /// (This is a bit of a guess - 650 is rejected)
+        /// </summary>
+        private const int MAX_SERVER_RENDER_IMAGE_BATCH_SIZE = 300;
+
         /// <summary>
         /// Cached personal access token, retrieved from PlayerPrefs
         /// </summary>
@@ -47,22 +58,66 @@ namespace UnityFigmaBridge.Editor
         /// The flowScreen controller to mange prototype functionality
         /// </summary>
         private static PrototypeFlowController s_PrototypeFlowController;
-        
+
         [MenuItem("Figma Bridge/Sync Document")]
         static void Sync()
         {
-            var requirementsMet = CheckRequirements();
-            if (requirementsMet)
-            {
-                ImportDocument(s_UnityFigmaBridgeSettings.FileId);
-            }
+            SyncAsync();
         }
         
+        private static async void SyncAsync()
+        {
+            var requirementsMet = CheckRequirements();
+            if (!requirementsMet) return;
+
+            var figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
+            if (figmaFile == null) return;
+
+            var pageNodeList = FigmaDataUtils.GetPageNodes(figmaFile);
+
+            if (s_UnityFigmaBridgeSettings.OnlyImportSelectedPages)
+            {
+                var downloadPageNodeIdList = pageNodeList.Select(p => p.id).ToList();
+                downloadPageNodeIdList.Sort();
+
+                var settingsPageDataIdList = s_UnityFigmaBridgeSettings.PageDataList.Select(p => p.NodeId).ToList();
+                settingsPageDataIdList.Sort();
+
+                if (!settingsPageDataIdList.SequenceEqual(downloadPageNodeIdList))
+                {
+                    ReportError("The pages found in the Figma document have changed - check your settings file and Sync again when ready", "");
+                    
+                    // Apply the new page list to serialized data and select to allow the user to change
+                    s_UnityFigmaBridgeSettings.RefreshForUpdatedPages(figmaFile);
+                    Selection.activeObject = s_UnityFigmaBridgeSettings;
+                    EditorUtility.SetDirty(s_UnityFigmaBridgeSettings);
+                    AssetDatabase.SaveAssetIfDirty(s_UnityFigmaBridgeSettings);
+                    AssetDatabase.Refresh();
+                    
+                    return;
+                }
+                
+                var enabledPageIdList = s_UnityFigmaBridgeSettings.PageDataList.Where(p => p.Selected).Select(p => p.NodeId).ToList();
+
+                if (enabledPageIdList.Count <= 0)
+                {
+                    ReportError("'Import Selected Pages' is selected, but no pages are selected for import", "");
+                    SelectSettings();
+                    return;
+                }
+
+                pageNodeList = pageNodeList.Where(p => enabledPageIdList.Contains(p.id)).ToList();
+            }
+
+            await ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodeList);
+            
+        }
+
         /// <summary>
         /// Check to make sure all requirements are met before syncing
         /// </summary>
         /// <returns></returns>
-        private static bool CheckRequirements() {
+        public static bool CheckRequirements() {
             
             // Find the settings asset if it exists
             if (s_UnityFigmaBridgeSettings == null)
@@ -198,6 +253,7 @@ namespace UnityFigmaBridge.Editor
                 s_PersonalAccessToken = newAccessToken;
                 Debug.Log( $"New access token set {s_PersonalAccessToken}");
                 PlayerPrefs.SetString(FIGMA_PERSONAL_ACCESS_TOKEN_PREF_KEY,s_PersonalAccessToken);
+                PlayerPrefs.Save();
                 return true;
             }
 
@@ -239,29 +295,39 @@ namespace UnityFigmaBridge.Editor
             EditorUtility.DisplayDialog("Unity Figma Bridge Error",message,"Ok");
             Debug.LogWarning($"{message}\n {error}\n");
         }
-        
-        private static async void ImportDocument(string fileId)
-        {
 
-            // Ensure we have all required directories
-            FigmaPaths.CreateRequiredDirectories();
-            
+        public static async Task<FigmaFile> DownloadFigmaDocument(string fileId)
+        {
             // Download figma document
-            FigmaFile figmaFile;
-            EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading file", 0);
+            EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading file", 0);
             try
             {
-               var figmaTask = FigmaApiUtils.GetFigmaDocument(fileId, s_PersonalAccessToken, true);
-               await figmaTask;
-               figmaFile = figmaTask.Result;
+                var figmaTask = FigmaApiUtils.GetFigmaDocument(fileId, s_PersonalAccessToken, true);
+                await figmaTask;
+                return figmaTask.Result;
             }
             catch (Exception e)
             {
-                EditorUtility.ClearProgressBar();
-                ReportError("Error downloading Figma document - Check your personal access key and document url are correct", e.ToString());
-                return;
+                ReportError(
+                    "Error downloading Figma document - Check your personal access key and document url are correct",
+                    e.ToString());
             }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+            return null;
+        }
+
+        private static async Task ImportDocument(string fileId, FigmaFile figmaFile, List<Node> downloadPageNodeList)
+        {
+
+            // Build a list of page IDs to download
+            var downloadPageIdList = downloadPageNodeList.Select(p => p.id).ToList();
             
+            // Ensure we have all required directories, and remove existing files
+            // TODO - Once we move to processing only differences, we won't remove existing files
+            FigmaPaths.CreateRequiredDirectories();
             
             // Next build a list of all externally referenced components not included in the document (eg
             // from external libraries) and download
@@ -273,7 +339,7 @@ namespace UnityFigmaBridge.Editor
             FigmaFileNodes activeExternalComponentsData=null;
             if (externalComponentList.Count > 0)
             {
-                EditorUtility.DisplayProgressBar("Importing Figma Document", $"Getting external component data", 0);
+                EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Getting external component data", 0);
                 try
                 {
                     var figmaTask = FigmaApiUtils.GetFigmaFileNodes(fileId, s_PersonalAccessToken,externalComponentList);
@@ -295,36 +361,44 @@ namespace UnityFigmaBridge.Editor
             
             // Some of the nodes, we'll want to identify to use Figma server side rendering (eg vector shapes, SVGs)
             // First up create a list of nodes we'll substitute with rendered images
-            var serverRenderNodes = FigmaDataUtils.FindAllServerRenderNodesInFile(figmaFile,externalComponentList);
+            var serverRenderNodes = FigmaDataUtils.FindAllServerRenderNodesInFile(figmaFile,externalComponentList,downloadPageIdList);
             
             // Request a render of these nodes on the server if required
-            FigmaServerRenderData serverRenderData=null;
+            var serverRenderData=new List<FigmaServerRenderData>();
             if (serverRenderNodes.Count > 0)
             {
                 var allNodeIds = serverRenderNodes.Select(serverRenderNode => serverRenderNode.SourceNode.id).ToList();
-                var serverNodeCsvList = string.Join(",", allNodeIds);
-                EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading server-rendered images", 0);
-                try
+                // As the API has an upper limit of images that can be rendered in a single request, we'll need to batch
+                var batchCount = Mathf.CeilToInt((float)allNodeIds.Count / MAX_SERVER_RENDER_IMAGE_BATCH_SIZE);
+                for (var i = 0; i < batchCount; i++)
                 {
-                    var figmaTask = FigmaApiUtils.GetFigmaServerRenderData(fileId, s_PersonalAccessToken,
-                        serverNodeCsvList, s_UnityFigmaBridgeSettings.ServerRenderImageScale);
-                    await figmaTask;
-                    serverRenderData = figmaTask.Result;
-                }
-                catch (Exception e)
-                {
-                    EditorUtility.ClearProgressBar();
-                    ReportError("Error downloading Figma Server Render Data",e.ToString());
-                    return;
+                    var startIndex = i * MAX_SERVER_RENDER_IMAGE_BATCH_SIZE;
+                    var nodeBatch = allNodeIds.GetRange(startIndex,
+                        Mathf.Min(MAX_SERVER_RENDER_IMAGE_BATCH_SIZE, allNodeIds.Count - startIndex));
+                    var serverNodeCsvList = string.Join(",", nodeBatch);
+                    EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading server-rendered image data {i+1}/{batchCount}",(float)i/(float)batchCount);
+                    try
+                    {
+                        var figmaTask = FigmaApiUtils.GetFigmaServerRenderData(fileId, s_PersonalAccessToken,
+                            serverNodeCsvList, s_UnityFigmaBridgeSettings.ServerRenderImageScale);
+                        await figmaTask;
+                        serverRenderData.Add(figmaTask.Result);
+                    }
+                    catch (Exception e)
+                    {
+                        EditorUtility.ClearProgressBar();
+                        ReportError("Error downloading Figma Server Render Image Data", e.ToString());
+                        return;
+                    }
                 }
             }
 
             // Track fills that are actually used. This is needed as FIGMA has a way of listing any bitmap used rather than active 
-            var foundImageFills = FigmaDataUtils.GetAllImageFillIdsFromFile(figmaFile);
+            var foundImageFills = FigmaDataUtils.GetAllImageFillIdsFromFile(figmaFile,downloadPageIdList);
             
             // Get image fill data for the document (list of urls to download any bitmap data used)
             FigmaImageFillData activeFigmaImageFillData; 
-            EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading image fill data", 0);
+            EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading image fill data", 0);
             try
             {
                 var figmaTask = FigmaApiUtils.GetDocumentImageFillData(fileId, s_PersonalAccessToken);
@@ -367,7 +441,9 @@ namespace UnityFigmaBridge.Editor
                 ServerRenderNodes = serverRenderNodes,
                 PrototypeFlowController = s_PrototypeFlowController,
                 FontMap = fontMap,
-                PrototypeFlowStartPoints = FigmaDataUtils.GetAllPrototypeFlowStartingPoints(figmaFile)
+                PrototypeFlowStartPoints = FigmaDataUtils.GetAllPrototypeFlowStartingPoints(figmaFile),
+                SelectedPagesForImport = downloadPageNodeList,
+                NodeLookupDictionary = FigmaDataUtils.BuildNodeLookupDictionary(figmaFile)
             };
             
             

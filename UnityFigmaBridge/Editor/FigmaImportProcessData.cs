@@ -41,6 +41,11 @@ namespace UnityFigmaBridge.Editor
         /// this is set when the figma unity UI document is generated
         /// </summary>
         public PrototypeFlowController PrototypeFlowController;
+
+        /// <summary>
+        /// Generated page prefabs
+        /// </summary>
+        public List<GameObject> PagePrefabs = new();
         
         /// <summary>
         /// Generated screens
@@ -51,11 +56,26 @@ namespace UnityFigmaBridge.Editor
         /// Count of flowScreen prefabs created with a specific name (to prevent name collision)
         /// </summary>
         public Dictionary<string, int> ScreenPrefabNameCounter = new();
+        
+        /// <summary>
+        /// Count of page prefab created with a specific name (to prevent name collision)
+        /// </summary>
+        public Dictionary<string, int> PagePrefabNameCounter = new();
 
         /// <summary>
         /// List of all prototype flow starting points
         /// </summary>
         public List<string> PrototypeFlowStartPoints = new();
+
+        /// <summary>
+        /// List of all page nodes to import
+        /// </summary>
+        public List<Node> SelectedPagesForImport = new();
+        
+        /// <summary>
+        /// Allow faster lookup of nodes by ID
+        /// </summary>
+        public Dictionary<string,Node> NodeLookupDictionary = new();
     }
 
     /// <summary>

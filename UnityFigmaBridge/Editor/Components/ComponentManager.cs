@@ -31,6 +31,11 @@ namespace UnityFigmaBridge.Editor.Components
             {
                 RemoveTemporaryNodeComponents(framePrefab);
             }
+            // Remove from pages
+            foreach (var pagePrefab in figmaImportProcessData.PagePrefabs.Where(pagePrefab => pagePrefab!=null))
+            {
+                RemoveTemporaryNodeComponents(pagePrefab);
+            }
        }
 
         /// <summary>
@@ -74,14 +79,33 @@ namespace UnityFigmaBridge.Editor.Components
         /// <param name="figmaImportProcessData"></param>
         public static void InstantiateAllComponentPrefabs(FigmaImportProcessData figmaImportProcessData)
         {
+
             // Instantiate components "within" components (nested components)
-            foreach (var componentPrefab in figmaImportProcessData.ComponentData.AllComponentPrefabs)
-                InstantiateComponentPrefabs(componentPrefab, figmaImportProcessData);
-            
-            // Instantiate components within screens 
-            foreach (var framePrefab in figmaImportProcessData.ScreenPrefabs.Where(framePrefab => framePrefab!=null))
-                InstantiateComponentPrefabs(framePrefab, figmaImportProcessData);
+            InstantiateComponentsInPrefabSet(figmaImportProcessData.ComponentData.AllComponentPrefabs,figmaImportProcessData,"Connecting nested components");
+            // Instantiate components within screens
+            InstantiateComponentsInPrefabSet(figmaImportProcessData.ScreenPrefabs,figmaImportProcessData,"Connecting screen components");
+            // Instantiate components within pages
+            InstantiateComponentsInPrefabSet(figmaImportProcessData.PagePrefabs,figmaImportProcessData,"Connecting page components");
         }
+
+        /// <summary>
+        /// Connects a set of components and provides feedback on progress
+        /// </summary>
+        /// <param name="prefabSet"></param>
+        /// <param name="figmaImportProcessData"></param>
+        /// <param name="progressTitle"></param>
+        private static void InstantiateComponentsInPrefabSet(List<GameObject> prefabSet,FigmaImportProcessData figmaImportProcessData, string progressTitle)
+        {
+            for (var i = 0; i < prefabSet.Count; i++)
+            {
+                var targetPrefab = prefabSet[i];
+                if (targetPrefab==null) continue;
+                EditorUtility.DisplayProgressBar(UnityFigmaBridgeImporter.PROGRESS_BOX_TITLE, $"{progressTitle} {i}/{prefabSet.Count} ", (float)i/prefabSet.Count);
+                InstantiateComponentPrefabs(targetPrefab, figmaImportProcessData);
+            }
+        }
+        
+        
         
         /// <summary>
         /// Instantiates prefabs within a given prefab
@@ -94,9 +118,23 @@ namespace UnityFigmaBridge.Editor.Components
             var prefabContents = PrefabUtility.LoadPrefabContents(assetPath);
             // Get all placeholders within this prefab - these will be replaced
             var allPlaceholderComponents = prefabContents.GetComponentsInChildren<FigmaComponentNodeMarker>();
+            
+            // Filter out any that are replacements in prefab instances (we want to skip these)
+            var targetPlaceHolderComponents = new List<FigmaComponentNodeMarker>();
+            foreach (var t in allPlaceholderComponents)
+            {
+                var prefabInstanceRoot=PrefabUtility.GetNearestPrefabInstanceRoot(t.gameObject);
+                if (prefabInstanceRoot==null) targetPlaceHolderComponents.Add(t);
+                else
+                {
+                    // Debug.Log($"Prefab instance root found for object {t.gameObject.name}, skipping");
+                }
+            }
+
+
             // Track a list of placed and modified components, to allow effective saving
             var modifiedPrefabInstances = new List<GameObject>();
-            foreach (var placeholder in allPlaceholderComponents)
+            foreach (var placeholder in targetPlaceHolderComponents)
             {
                 var sourceComponentPrefab = figmaImportProcessData.ComponentData.GetComponentPrefab(placeholder.ComponentId);
 
@@ -123,9 +161,9 @@ namespace UnityFigmaBridge.Editor.Components
                 // Copy transform order
                 addedReplacementComponent.transform.SetSiblingIndex(placeholder.transform.GetSiblingIndex()); // Put at same order
                 // Get the Node data for this component
-                var nodeData = FigmaDataUtils.GetFigmaNodeWithId(figmaImportProcessData.SourceFile, placeholder.NodeId); 
+                var nodeData = figmaImportProcessData.NodeLookupDictionary[placeholder.NodeId]; 
                 // Get parent node data for the original node
-                var parentNodeData = FigmaDataUtils.GetFigmaNodeWithId(figmaImportProcessData.SourceFile, placeholder.ParentNodeId);
+                var parentNodeData =  figmaImportProcessData.NodeLookupDictionary[placeholder.ParentNodeId];
                 if (nodeData != null)
                 {
                     // Recursively apply all properties for this node object (such as text, image fills etc)

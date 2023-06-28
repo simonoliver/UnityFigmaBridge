@@ -30,7 +30,7 @@ Please note - currently only supports **Unity 2021.3** and later!
 * Automatically generates required font assets (including downloading missing fonts from Google Fonts)
 * Binds Unity MonoBehaviours and fields to Figma objects
 * Server side rendering of vector shapes
-* Auto layout support
+* Auto layout support (Experimental - may cause issues on complex layouts)
 * Scrolling frames (using overflow scrolling settings)
 
 ## Setting up
@@ -66,6 +66,20 @@ the specified screen as per the Figma document. Currently there is a dew
 * Click Figma Bridge → Sync Document
 * Enter your Personal Access Token (this will be stored in your Player Prefs for future use)
 * It will ask if you want to use the current scene to generate prototype flow - Click yes
+
+## Selecting Figma Pages
+
+![SelectPage.png](Docs/SelectPage.png)
+
+If you only want to import specific pages from the Figma document (for example if you use a page for design notes or
+brainstorming), you can tick "Select Pages to import" in the settings file. It will then download the document
+and show you a list of pages to choose from. This can help speed up import time and reduce the number of
+assets imported. Any page that is not selected will have the following rules:
+
+* Components will still be generated (in case they are used on other pages)
+* Screens will not be generated
+* Image Fills will not be downloaded (unless within a component)
+* Server side images will not be rendered (unless within a component)
 
 ## How Figma objects map to Unity
 
@@ -125,6 +139,7 @@ mentioned in *Binding Behaviours*
 ## Auto layout
 
 Vertical or Horizontal layout groups will be added to mirror the auto layout settings of a given object in the Figma document.
+Please note this is disabled by default (enable in settings) as it can cause issues with complex layouts.
 
 ## Binding behaviours
 

@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 using UnityFigmaBridge.Editor.FigmaApi;
 
 namespace UnityFigmaBridge.Editor.Settings
@@ -16,6 +19,8 @@ namespace UnityFigmaBridge.Editor.Settings
         [Tooltip("Scene used for prototype assets, including canvas")]
         public string RunTimeAssetsScenePath;
         
+        [Tooltip("Enable Auto layout components (Horizontal/Vertical layout) (EXPERIMENTAL)")]
+        public bool EnableAutoLayout = false;
         
         [Tooltip("C# Namespace filter for binding MonoBehaviours for screens. Use this to ensure it will only bind to MonoBehaviours in that namespace (eg specify 'MyGame.UI' to only bind MyGame.UI.PlayScreen node to 'PlayScreen')")]
         public string ScreenBindingNamespace="";
@@ -35,6 +40,12 @@ namespace UnityFigmaBridge.Editor.Settings
         [Tooltip("If true, all imported image fills will be set to 'clamp' rather than 'repeat.'")]
         public bool clampImportedImages = true;
 
+        [Tooltip("If true, download only selected pages and screens")]
+        public bool OnlyImportSelectedPages = false;
+
+        [HideInInspector]
+        public List<FigmaPageData> PageDataList = new ();
+
         public string FileId {
             get
             {
@@ -42,5 +53,50 @@ namespace UnityFigmaBridge.Editor.Settings
                 return isValid ? fileId : "";
             }
         }
+        
+        public void RefreshForUpdatedPages(FigmaFile file)
+        {
+            // Get all pages from Figma Doc
+            var pageNodeList = FigmaDataUtils.GetPageNodes(file);
+            var downloadPageNodeIdList = pageNodeList.Select(p => p.id).ToList();
+
+            // Get a list of all pages in the settings file
+            var settingsPageDataIdList = PageDataList.Select(p => p.NodeId).ToList();
+
+            // Build a list of all new pages to add
+            var addPageIdList = downloadPageNodeIdList.Except(settingsPageDataIdList);
+            foreach (var addPageId in addPageIdList)
+            {
+                var addNode = pageNodeList.FirstOrDefault(p => p.id == addPageId);
+                PageDataList.Add(new FigmaPageData(addNode.name, addNode.id));
+            }
+            
+            // Build a list of removed pages to remove from list
+            var deletePageIdList = settingsPageDataIdList.Except(downloadPageNodeIdList);
+            foreach (var deletePageId in deletePageIdList)
+            {
+                var index = PageDataList.FindIndex(p => p.NodeId == deletePageId);
+                PageDataList.RemoveAt(index);
+            }
+            PageDataList.OrderBy(p => p.NodeId);
+        }
     }
+
+    [Serializable]
+    public class FigmaPageData
+    {
+        public string Name;
+        public string NodeId;
+        public bool Selected;
+
+        public FigmaPageData(){}
+
+        public FigmaPageData(string name, string nodeId)
+        {
+            Name = name;
+            NodeId = nodeId;
+            Selected = true; // default is true
+        }
+    }
+    
 }

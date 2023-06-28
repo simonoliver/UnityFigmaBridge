@@ -65,12 +65,12 @@ namespace UnityFigmaBridge.Editor.Utils
 
         public static string GetPathForScreenPrefab(Node node,int duplicateCount)
         {
-            return $"{FigmaScreenPrefabFolder}/{GetScreenNameForNode(node,duplicateCount)}.prefab";
+            return $"{FigmaScreenPrefabFolder}/{GetFileNameForNode(node,duplicateCount)}.prefab";
         }
         
-        public static string GetPathForPagePrefab(Node node)
+        public static string GetPathForPagePrefab(Node node,int duplicateCount)
         {
-            return $"{FigmaPagePrefabFolder}/{ReplaceUnsafeCharacters(node.name)}.prefab";
+            return $"{FigmaPagePrefabFolder}/{GetFileNameForNode(node,duplicateCount)}.prefab";
         }
         
         public static string GetPathForComponentPrefab(string nodeName,int duplicateCount)
@@ -81,7 +81,7 @@ namespace UnityFigmaBridge.Editor.Utils
             return $"{FigmaComponentPrefabFolder}/{nodeName}.prefab";
         }
         
-        public static string GetScreenNameForNode(Node node,int duplicateCount)
+        public static string GetFileNameForNode(Node node,int duplicateCount)
         {
             var safeNodeTitle=ReplaceUnsafeCharacters(node.name);
             // If name already used, create a unique name
@@ -115,7 +115,8 @@ namespace UnityFigmaBridge.Editor.Utils
             {
                 Directory.CreateDirectory(FigmaPagePrefabFolder);
             }
-            // Remove existing prefabs for pagwes
+
+            // Remove existing prefabs for pages
             foreach (var file in new DirectoryInfo(FigmaPagePrefabFolder).GetFiles())
             {
                 file.Delete(); 

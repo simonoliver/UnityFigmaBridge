@@ -439,6 +439,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         
         // FOR ELLIPSE
         public ArcData arcData;
+        
     }
     
     public class Color
