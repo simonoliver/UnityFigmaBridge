@@ -114,7 +114,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 throw new Exception($"Problem decoding Figma document JSON {e.ToString()}");
             }
 
-            if (writeFile) File.WriteAllText("Assets\\" + WRITE_FILE_PATH, webRequest.downloadHandler.text);
+            if (writeFile) File.WriteAllText(Path.Combine("Assets", WRITE_FILE_PATH), webRequest.downloadHandler.text);
             return figmaFile;
         }
 
