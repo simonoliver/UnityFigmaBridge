@@ -25,7 +25,6 @@ Shader "Figma/FigmaImageShader"
         // Corner radius defines corner for rectangle shapes, one per corner
         _CornerRadius ("Corner Radius", Vector) = (0, 0, 0, 0)
         
-        _StrokeColor ("Stroke Color", Color) = (1,1,1,1)
         _StrokeWidth ("Stroke Width", Float) = 2
         
         // End Figma properties
