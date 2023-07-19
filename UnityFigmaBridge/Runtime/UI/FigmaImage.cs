@@ -410,7 +410,10 @@ namespace UnityFigmaBridge.Runtime.UI
            }
 
            // Largely this is the the same as Graphic original, but with extra UV Channels settings
-            Color32 color32 = color;
+
+            // If the player settings is set to linear, we need to convert the vertex color to gamma space
+            // because FigmaImageShader treats the color as in gamma space.
+            Color32 color32 = LinearToGammaSpaceIfNeeded(color);
             vh.Clear();
             // Order is TL, BL, BR, TR
             vh.AddVert(new Vector3(v.x, v.y), color32, texCoords[0],new Vector4(0f, 0,rtSize.x,rtSize.y), Vector3.zero, Vector4.zero);
@@ -528,10 +531,24 @@ namespace UnityFigmaBridge.Runtime.UI
             canvasAdditionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord1;
             canvas.additionalShaderChannels = canvasAdditionalShaderChannels;
         }
-        
+
+        /// <summary>
+        /// Change the color space from linear to gamma if needed
+        /// </summary>
+        /// <param name="inColor">Input color</param>
+        private Color LinearToGammaSpaceIfNeeded(Color inColor)
+        {
+            if (QualitySettings.activeColorSpace == ColorSpace.Gamma)
+            {
+                return inColor;
+            }
+
+            Color outColor;
+            outColor.r = Mathf.LinearToGammaSpace(inColor.r);
+            outColor.g = Mathf.LinearToGammaSpace(inColor.g);
+            outColor.b = Mathf.LinearToGammaSpace(inColor.b);
+            outColor.a = inColor.a;
+            return outColor;
+        }
     }
-
-
-
-
 }
