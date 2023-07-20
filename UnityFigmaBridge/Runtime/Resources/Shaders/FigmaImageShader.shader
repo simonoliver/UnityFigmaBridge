@@ -26,6 +26,8 @@ Shader "Figma/FigmaImageShader"
         _CornerRadius ("Corner Radius", Vector) = (0, 0, 0, 0)
         
         _StrokeWidth ("Stroke Width", Float) = 2
+        _StrokeColor ("Stroke Color", Color) = (1,1,1,1)
+        _FillColor ("Fill Color", Color) = (1,1,1,1)
         
         // End Figma properties
     }
@@ -252,6 +254,14 @@ Shader "Figma/FigmaImageShader"
                 return length(r-p) * sign(p.y-r.y);
             }
 
+            float4 GammaToLinearIfNeeded(float4 color)
+            {
+            #if UNITY_COLORSPACE_GAMMA
+                return color;
+            #else
+                return float4(GammaToLinearSpace(color.rgb), color.a);
+            #endif
+            }
         
             float4 GetGradientColor(float percAlongGradient)
             {
@@ -261,7 +271,10 @@ Shader "Figma/FigmaImageShader"
                 for ( int i=1; i<_GradientNumStops-1; ++i ) {
                     gradientColor = lerp(gradientColor, _GradientColors[i+1], smoothstep( _GradientStops[i],  _GradientStops[i+1], percAlongGradient ) );
                 }
-                return gradientColor;
+
+                // If the setting of the color space is set to Linear,
+                // convert the color to linear space after the interpolation.
+                return  GammaToLinearIfNeeded(gradientColor);
             }
 
 
@@ -399,11 +412,7 @@ Shader "Figma/FigmaImageShader"
                     clip (color.a - 0.001);
                 #endif
 
-                #if UNITY_COLORSPACE_GAMMA
-                     return color;
-                #else
-                    return float4(GammaToLinearSpace( color.rgb),color.a);
-                #endif
+                return color;
                 
             }
 
