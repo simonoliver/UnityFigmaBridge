@@ -64,11 +64,13 @@ namespace UnityFigmaBridge.Editor
         {
             SyncAsync();
         }
-        
+
         private static async void SyncAsync()
         {
             var requirementsMet = CheckRequirements();
             if (!requirementsMet) return;
+
+            s_UnityFigmaBridgeSettings.CheckUpdate();
 
             var figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
             if (figmaFile == null) return;

@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityFigmaBridge.Editor.FigmaApi;
+using UnityFigmaBridge.Editor.Utils;
 
 namespace UnityFigmaBridge.Editor.Settings
 {
@@ -40,6 +43,9 @@ namespace UnityFigmaBridge.Editor.Settings
         [Tooltip("If true, download only selected pages and screens")]
         public bool OnlyImportSelectedPages = false;
 
+        [Tooltip("Version in which the Sync process was executed. (Do not edit manually)")]
+        public string LastImportVersion = "";
+
         [HideInInspector]
         public List<FigmaPageData> PageDataList = new ();
 
@@ -51,6 +57,48 @@ namespace UnityFigmaBridge.Editor.Settings
             }
         }
         
+        /// <summary>
+        /// Return true if the migrate process have to be performed
+        /// </summary>
+        /// <returns></returns>
+        bool NeedsMigrate()
+        {
+            return string.IsNullOrEmpty(LastImportVersion) || new Version(LastImportVersion) < FigmaVersion.Version;
+        }
+
+        /// <summary>
+        /// Check update and perform migrate process if needed
+        /// </summary>
+        public void CheckUpdate()
+        {
+            if (NeedsMigrate())
+            {
+                MigrateFrom(LastImportVersion);
+            }
+            LastImportVersion = FigmaVersion.Version.ToString();
+        }
+
+        /// <summary>
+        /// Migrate process from a specific version
+        /// </summary>
+        /// <param name="fromVersion"></param>
+        void MigrateFrom(string fromVersion)
+        {
+            // from 1.0.7 or earlier
+            if (string.IsNullOrEmpty(fromVersion))
+            {
+                foreach (var filePath in Directory.GetFiles(FigmaPaths.FigmaImageFillFolder))
+                {
+                    var textureImporter = AssetImporter.GetAtPath(filePath) as TextureImporter;
+                    if (textureImporter != null)
+                    {
+                        textureImporter.sRGBTexture = true;
+                        textureImporter.SaveAndReimport();
+                    }
+                }
+            }
+        }
+
         public void RefreshForUpdatedPages(FigmaFile file)
         {
             // Get all pages from Figma Doc
