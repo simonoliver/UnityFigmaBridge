@@ -388,8 +388,12 @@ namespace UnityFigmaBridge.Editor.Nodes
                     break;
                 case NodeType.SECTION:
                     break;
+                case NodeType.TABLE:
+                case NodeType.TABLE_CELL:
+                case NodeType.WASHI_TAPE:
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    // Unimplemented type
+                    break;
             }
         }
 
