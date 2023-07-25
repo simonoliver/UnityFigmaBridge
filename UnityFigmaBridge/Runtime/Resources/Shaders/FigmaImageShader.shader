@@ -412,6 +412,14 @@ Shader "Figma/FigmaImageShader"
                     clip (color.a - 0.001);
                 #endif
 
+                // For accurate blending that matches the Figma doc, we want to convert the alpha value back
+                // to gamma space prior to blend
+                #if UNITY_COLORSPACE_GAMMA
+                    return color;
+                #else
+                    return float4(color.rgb, LinearToGammaSpace(color.a).r);
+                #endif
+                 
                 return color;
                 
             }
