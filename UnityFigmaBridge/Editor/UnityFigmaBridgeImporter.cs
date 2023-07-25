@@ -393,6 +393,9 @@ namespace UnityFigmaBridge.Editor
                 }
             }
 
+            // Make sure that existing downloaded assets are in the correct format
+            FigmaApiUtils.CheckExistingAssetProperties();
+            
             // Track fills that are actually used. This is needed as FIGMA has a way of listing any bitmap used rather than active 
             var foundImageFills = FigmaDataUtils.GetAllImageFillIdsFromFile(figmaFile,downloadPageIdList);
             

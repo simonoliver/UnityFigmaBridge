@@ -347,7 +347,30 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 downloadIndex++;
             }
         }
-        
-        
+
+    
+        /// <summary>
+        /// Checks that existing assets are in the correct format
+        /// </summary>
+        public static void CheckExistingAssetProperties()
+        {
+            CheckImageFillTextureProperties();
+        }
+
+        /// <summary>
+        /// Checks downloaded image fills
+        /// </summary>
+        private static void CheckImageFillTextureProperties()
+        {
+            foreach (var filePath in Directory.GetFiles(FigmaPaths.FigmaImageFillFolder))
+            {
+                var textureImporter = AssetImporter.GetAtPath(filePath) as TextureImporter;
+                if (textureImporter == null) continue;
+                // Previous versions may not have sRGB set
+                if (textureImporter.sRGBTexture) continue;
+                textureImporter.sRGBTexture = true;
+                textureImporter.SaveAndReimport();
+            }
+        }
     }
 }
