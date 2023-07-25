@@ -413,7 +413,7 @@ namespace UnityFigmaBridge.Runtime.UI
 
             // If the player settings is set to linear, we need to convert the vertex color to gamma space
             // because FigmaImageShader treats the color as in gamma space.
-            Color32 color32 = LinearToGammaSpaceIfNeeded(color);
+            Color32 color32 = color;
             vh.Clear();
             // Order is TL, BL, BR, TR
             vh.AddVert(new Vector3(v.x, v.y), color32, texCoords[0],new Vector4(0f, 0,rtSize.x,rtSize.y), Vector3.zero, Vector4.zero);
@@ -502,6 +502,10 @@ namespace UnityFigmaBridge.Runtime.UI
                 var percentGradientLength = i / (float)(i - 1);
                 gradientColors[i].a= m_FillGradient.Evaluate(percentGradientLength).a;
             }
+
+            // Since color interpolation must be done in gamma space,
+            // the gradient colors are passed to the shader without conversion to linear space,
+            // even if the color space setting is set to linear.
             mat.SetColorArray(s_GradientColorsPropertyID,gradientColors);
             mat.SetFloatArray(s_GradientStopsPropertyID,gradientStops);
             mat.SetFloat(s_GradientNumStopsPropertyID,gradientStopCount);
@@ -530,25 +534,6 @@ namespace UnityFigmaBridge.Runtime.UI
             AdditionalCanvasShaderChannels canvasAdditionalShaderChannels = canvas.additionalShaderChannels;
             canvasAdditionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord1;
             canvas.additionalShaderChannels = canvasAdditionalShaderChannels;
-        }
-
-        /// <summary>
-        /// Change the color space from linear to gamma if needed
-        /// </summary>
-        /// <param name="inColor">Input color</param>
-        private Color LinearToGammaSpaceIfNeeded(Color inColor)
-        {
-            if (QualitySettings.activeColorSpace == ColorSpace.Gamma)
-            {
-                return inColor;
-            }
-
-            Color outColor;
-            outColor.r = Mathf.LinearToGammaSpace(inColor.r);
-            outColor.g = Mathf.LinearToGammaSpace(inColor.g);
-            outColor.b = Mathf.LinearToGammaSpace(inColor.b);
-            outColor.a = inColor.a;
-            return outColor;
         }
     }
 }
