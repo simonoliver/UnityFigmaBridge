@@ -1,5 +1,11 @@
 ﻿# Change Log:
 
+## 1.0.8
+
+Better support for Linear Color Space (@naoya-maeda). Please note that from this release
+all imported textures will have sRGB set to true. The FigmaImage component
+now supports sRGB textures in both gamma and linear color spaces/
+
 ## 1.0.7
 
 - Enhancement - Added support for "Fit" Image mode (@laura-copop)
