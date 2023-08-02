@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -189,8 +190,15 @@ namespace UnityFigmaBridge.Editor.Components
             {
                 // We might have issue with nested elements so need try catch loop
                 // TODO - Check for recurisve nested components
-                PrefabUtility.SaveAsPrefabAsset(prefabContents, assetPath);
-                
+                if (File.Exists(assetPath) && figmaImportProcessData.Settings.UpdateExistingPrefab) {
+                    Debug.Log("UpdatePrefab: " + prefabContents.name + ", " + assetPath);
+                    PrefabUtility.ApplyPrefabInstance(prefabContents, InteractionMode.AutomatedAction);
+
+                }
+                {
+                    Debug.Log("SavePrefab: " + prefabContents.name + ", " + assetPath);
+                    PrefabUtility.SaveAsPrefabAsset(prefabContents, assetPath);
+                }
                 // Apply changes to the instance as modifications
                 foreach (var modifiedPrefabInstance in modifiedPrefabInstances)
                 {
