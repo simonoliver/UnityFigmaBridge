@@ -107,7 +107,7 @@ namespace UnityFigmaBridge.Editor.Utils
             return System.Text.RegularExpressions.Regex.Replace(name, invalidRegStr, "_");
         }
 
-        public static void CreateRequiredDirectories()
+        public static void CreateRequiredDirectories(bool updatePrefabs)
         {
             
             //  Create directory for pages if required 
@@ -116,23 +116,30 @@ namespace UnityFigmaBridge.Editor.Utils
                 Directory.CreateDirectory(FigmaPagePrefabFolder);
             }
 
-            // Remove existing prefabs for pages
-            foreach (var file in new DirectoryInfo(FigmaPagePrefabFolder).GetFiles())
+            if (!updatePrefabs)
             {
-                file.Delete(); 
+                // Remove existing prefabs for pages
+                foreach (var file in new DirectoryInfo(FigmaPagePrefabFolder).GetFiles())
+                {
+                    file.Delete();
+                }
             }
-            
+
             //  Create directory for flowScreen prefabs if required 
             if (!Directory.Exists(FigmaScreenPrefabFolder))
             {
                 Directory.CreateDirectory(FigmaScreenPrefabFolder);
             }
-            // Remove existing flowScreen prefabs
-            foreach (FileInfo file in  new DirectoryInfo(FigmaScreenPrefabFolder).GetFiles())
+
+            if (!updatePrefabs)
             {
-                file.Delete(); 
+                // Remove existing flowScreen prefabs
+                foreach (FileInfo file in new DirectoryInfo(FigmaScreenPrefabFolder).GetFiles())
+                {
+                    file.Delete();
+                }
             }
-            
+
             if (!Directory.Exists(FigmaComponentPrefabFolder))
             {
                 Directory.CreateDirectory(FigmaComponentPrefabFolder);
