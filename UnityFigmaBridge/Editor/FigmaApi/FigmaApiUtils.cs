@@ -60,10 +60,21 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <returns>File Id</returns>
         public static (bool, string) GetFigmaDocumentIdFromUrl(string url)
         {
-            // Format is https://www.figma.com/file/{DOC_ID}/{NAME}?node-id={NODE}
-            var initialSection = "https://www.figma.com/file/";
-            if (url.IndexOf(initialSection, StringComparison.Ordinal) != 0) return (false, "");
-            var remainder = url.Substring(initialSection.Length);
+            // Legacy Format is https://www.figma.com/file/{DOC_ID}/{NAME}?node-id={NODE}
+            // New format is https://www.figma.com/design/{DOC_ID}/{NAME}?node-id={NODE}
+            
+            var legacyInitialSection = "https://www.figma.com/file/";
+            var modernInitialSection = "https://www.figma.com/design/";
+
+            var legacyInitialSectionIndex = url.IndexOf(legacyInitialSection, StringComparison.Ordinal);
+            var modernInitialSectionIndex = url.IndexOf(modernInitialSection, StringComparison.Ordinal);
+            
+            // If neither found, it's invalid
+            if ( legacyInitialSectionIndex!= 0 && modernInitialSectionIndex!=0) return (false, "");
+            // Select best fit
+            var targetSectionToUse = legacyInitialSectionIndex == 0 ? legacyInitialSection : modernInitialSection;
+            
+            var remainder = url.Substring(targetSectionToUse.Length);
             var nextSeperatorIndex = remainder.IndexOf('/');
             if (nextSeperatorIndex == -1) return (false, "");
             return (true, remainder.Substring(0, nextSeperatorIndex));
