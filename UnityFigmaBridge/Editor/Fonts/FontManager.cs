@@ -189,8 +189,8 @@ namespace UnityFigmaBridge.Editor.Fonts
             
             if (shadow)
             {
-                newMaterialPreset.SetFloat("_UnderlayOffsetX",0);
-                newMaterialPreset.SetFloat("_UnderlayOffsetY",-0.6f);
+                newMaterialPreset.SetFloat("_UnderlayOffsetX",shadowDistance.x);
+                newMaterialPreset.SetFloat("_UnderlayOffsetY",shadowDistance.y);
                 newMaterialPreset.SetColor("_UnderlayColor",shadowColor);
             }
             
