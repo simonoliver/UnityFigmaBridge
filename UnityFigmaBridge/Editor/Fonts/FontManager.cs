@@ -180,7 +180,7 @@ namespace UnityFigmaBridge.Editor.Fonts
             // No match, create new preset
             var newMaterialPreset = new Material(fontMapEntry.FontAsset.material);
             // We use a modified shader that handles distance from edge better
-            newMaterialPreset.shader = Shader.Find("Figma/TextMeshPro");
+            newMaterialPreset.shader = Shader.Find("TextMeshPro/Distance Field SSD");
             
             var materialName = $"{fontMapEntry.FontAsset.name}_variant_{materialPresets}";
             newMaterialPreset.name = materialName;
