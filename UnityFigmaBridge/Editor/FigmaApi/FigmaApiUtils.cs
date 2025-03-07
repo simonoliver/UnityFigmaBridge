@@ -333,6 +333,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                     textureImporter.mipmapEnabled = true; // We'll enable mip maps to stop issues at lower resolutions
                     textureImporter.textureCompression = TextureImporterCompression.Uncompressed;
                     textureImporter.sRGBTexture = true;
+                    textureImporter.spriteImportMode = SpriteImportMode.Single;
 
 
                     switch (downloadItem.FileType)
@@ -377,10 +378,25 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             {
                 var textureImporter = AssetImporter.GetAtPath(filePath) as TextureImporter;
                 if (textureImporter == null) continue;
+                bool isDirty = false;
                 // Previous versions may not have sRGB set
-                if (textureImporter.sRGBTexture) continue;
-                textureImporter.sRGBTexture = true;
-                textureImporter.SaveAndReimport();
+                if (!textureImporter.sRGBTexture)
+                {
+                    textureImporter.sRGBTexture = true;
+                    isDirty = true;
+                }
+
+                if (textureImporter.spriteImportMode != SpriteImportMode.Single)
+                {
+                    // 此処切り替えるとプレハブから画像設定が消し飛ぶ
+                    textureImporter.spriteImportMode = SpriteImportMode.Single;
+                    isDirty = true;
+                }
+
+                if (isDirty)
+                {
+                    textureImporter.SaveAndReimport();
+                }
             }
         }
     }
