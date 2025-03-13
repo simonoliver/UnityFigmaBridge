@@ -25,7 +25,7 @@ namespace UnityFigmaBridge.Extension.Editor
             setting = AssetDatabase.LoadAssetAtPath<CustomComponentAttachSetting>(CUSTOM_COMPONENT_ATTACH_SETTING_FILE_NAME);
         }
         
-        public static void OnAttach(string prefabPath)
+        public static void OnAttach(GameObject prefab)
         {
             if (setting == null)
             {
@@ -37,8 +37,6 @@ namespace UnityFigmaBridge.Extension.Editor
             {
                 return;
             }
-            
-            GameObject prefab = PrefabUtility.LoadPrefabContents(prefabPath);
             
             if (prefab == null)
             {
@@ -81,10 +79,6 @@ namespace UnityFigmaBridge.Extension.Editor
                     }
                 }
             }
-            
-            // 上書き
-            PrefabUtility.SaveAsPrefabAsset(prefab, prefabPath);
-            PrefabUtility.UnloadPrefabContents(prefab);
         }
 
         public static void OnEnd()

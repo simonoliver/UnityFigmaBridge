@@ -10,6 +10,7 @@ using UnityFigmaBridge.Editor.PrototypeFlow;
 using UnityFigmaBridge.Editor.Utils;
 using UnityFigmaBridge.Runtime.UI;
 using Object = UnityEngine.Object;
+using UnityFigmaBridge.Extension.Editor;
 
 namespace UnityFigmaBridge.Editor.Components
 {
@@ -96,6 +97,8 @@ namespace UnityFigmaBridge.Editor.Components
         /// <param name="progressTitle"></param>
         private static void InstantiateComponentsInPrefabSet(List<GameObject> prefabSet,FigmaImportProcessData figmaImportProcessData, string progressTitle)
         {
+
+            CustomComponentAttachManager.OnStart();
             for (var i = 0; i < prefabSet.Count; i++)
             {
                 var targetPrefab = prefabSet[i];
@@ -103,6 +106,8 @@ namespace UnityFigmaBridge.Editor.Components
                 EditorUtility.DisplayProgressBar(UnityFigmaBridgeImporter.PROGRESS_BOX_TITLE, $"{progressTitle} {i}/{prefabSet.Count} ", (float)i/prefabSet.Count);
                 InstantiateComponentPrefabs(targetPrefab, figmaImportProcessData);
             }
+
+            CustomComponentAttachManager.OnEnd();
         }
         
         
@@ -184,6 +189,10 @@ namespace UnityFigmaBridge.Editor.Components
                 Object.DestroyImmediate(placeholder.gameObject); // Remove the placeholder
 
             }
+            
+            // カスタムコンポーネントアタッチ
+            CustomComponentAttachManager.OnAttach(prefabContents);
+            
             // Save prefab and all changes
             try
             {
