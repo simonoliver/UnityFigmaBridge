@@ -2,10 +2,9 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 
 
-namespace UnityFigmaBridge.Extension.Editor
+namespace UnityFigmaBridge.Editor.Extension
 {
     /// <summary>
     /// カスタムコンポーネントをアタッチする為の管理クラス
@@ -47,21 +46,22 @@ namespace UnityFigmaBridge.Extension.Editor
             var allObjectsTransForm  = prefab.GetComponentsInChildren<Transform>();
             foreach (var transform in allObjectsTransForm)
             {
-                var gameObject = transform.gameObject;
-                if (gameObject == null)
+                GameObject gameObject = transform.gameObject;
+                if (!gameObject)
                 {
                     continue;
                 }
                 
                 // プレハブであれば無視
-                if (PrefabUtility.GetCorrespondingObjectFromSource(gameObject) != null)
+                if (PrefabUtility.GetCorrespondingObjectFromSource(gameObject))
                 {
                     continue;
                 }
                 
                 foreach (var attachSetting in setting.attachSettingList)
                 {
-                    if (gameObject.IsDestroyed())
+                    // アタッチの過程で削除されていた場合は抜ける
+                    if (!gameObject)
                     {
                         break;
                     }

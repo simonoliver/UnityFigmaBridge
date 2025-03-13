@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace UnityFigmaBridge.Extension.Editor
+namespace UnityFigmaBridge.Editor.Extension
 {
     /// <summary>
     /// コンポーネントアタッチ用のインターフェース

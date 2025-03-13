@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
 
-namespace UnityFigmaBridge.Extension.Editor
+namespace UnityFigmaBridge.Editor.Extension
 {
     /// <summary>
     /// 末尾が一致するオブジェクトに対して、コンポーネントアタッチ用の処理クラスを設定する為のクラス

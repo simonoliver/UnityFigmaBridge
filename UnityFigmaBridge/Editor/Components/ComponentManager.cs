@@ -10,7 +10,7 @@ using UnityFigmaBridge.Editor.PrototypeFlow;
 using UnityFigmaBridge.Editor.Utils;
 using UnityFigmaBridge.Runtime.UI;
 using Object = UnityEngine.Object;
-using UnityFigmaBridge.Extension.Editor;
+using UnityFigmaBridge.Editor.Extension;
 
 namespace UnityFigmaBridge.Editor.Components
 {
