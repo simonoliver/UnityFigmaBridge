@@ -24,7 +24,7 @@ namespace UnityFigmaBridge.Editor.Extension
             setting = AssetDatabase.LoadAssetAtPath<CustomComponentAttachSetting>(CUSTOM_COMPONENT_ATTACH_SETTING_FILE_NAME);
         }
         
-        public static void OnAttach(GameObject prefab)
+        public static void ApplySetting(GameObject prefab)
         {
             if (setting == null)
             {

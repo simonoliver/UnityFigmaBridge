@@ -191,7 +191,7 @@ namespace UnityFigmaBridge.Editor.Components
             }
             
             // カスタムコンポーネントアタッチ
-            CustomComponentAttachManager.OnAttach(prefabContents);
+            CustomComponentAttachManager.ApplySetting(prefabContents);
             
             // Save prefab and all changes
             try
