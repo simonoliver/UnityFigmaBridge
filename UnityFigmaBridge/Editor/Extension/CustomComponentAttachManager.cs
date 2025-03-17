@@ -17,14 +17,18 @@ namespace UnityFigmaBridge.Editor.Extension
         private static readonly string CUSTOM_COMPONENT_ATTACH_SETTING_FILE_NAME = "Assets/Figma/Custom/CustomComponentAttachSetting.asset";
         private static CustomComponentAttachSetting setting;
         private static readonly Dictionary<Type, IComponentAttachment> InstanceCache = new Dictionary<Type, IComponentAttachment>();
-
+        
+        
         public static void OnStart()
         {
             // 設定ファイルを読み込む
             setting = AssetDatabase.LoadAssetAtPath<CustomComponentAttachSetting>(CUSTOM_COMPONENT_ATTACH_SETTING_FILE_NAME);
         }
         
-        public static void ApplySetting(GameObject prefab)
+        /// <summary>
+        /// プレハブ単位の設定適用
+        /// </summary>
+        public static void ApplySettingPrefab(GameObject prefab)
         {
             if (setting == null)
             {
@@ -47,36 +51,44 @@ namespace UnityFigmaBridge.Editor.Extension
             foreach (var transform in allObjectsTransForm)
             {
                 GameObject gameObject = transform.gameObject;
+                CustomComponentAttachManager.ApplySettingGameObject(gameObject);
+            }
+        }
+
+        /// <summary>
+        /// ゲームオブジェクト単位の設定適用
+        /// </summary>
+        public static void ApplySettingGameObject(GameObject gameObject)
+        {
+            if (!gameObject)
+            {
+                return;
+            }
+                
+            // プレハブであれば無視
+            if (PrefabUtility.GetCorrespondingObjectFromSource(gameObject))
+            {
+                return;
+            }
+                
+            foreach (var attachSetting in setting?.attachSettingList)
+            {
+                // アタッチの過程で削除されていた場合は抜ける
                 if (!gameObject)
                 {
-                    continue;
+                    return;
                 }
-                
-                // プレハブであれば無視
-                if (PrefabUtility.GetCorrespondingObjectFromSource(gameObject))
-                {
-                    continue;
-                }
-                
-                foreach (var attachSetting in setting.attachSettingList)
-                {
-                    // アタッチの過程で削除されていた場合は抜ける
-                    if (!gameObject)
-                    {
-                        break;
-                    }
                     
-                    var objectName = gameObject.name;
+                var objectName = gameObject.name;
 
-                    // 末尾の名称パターンが存在しないか、合致した
-                    if (string.IsNullOrEmpty(attachSetting.attachTargetEndName) ||
-                        objectName.EndsWith(attachSetting.attachTargetEndName))
-                    {
-                        AttachComponent(
-                            gameObject,
-                            attachSetting.componentAttachClassName);
+                // 末尾の名称パターンが存在しないか、合致した
+                if (string.IsNullOrEmpty(attachSetting.attachTargetEndName) ||
+                    objectName.EndsWith(attachSetting.attachTargetEndName))
+                {
+                    AttachComponent(
+                        gameObject,
+                        attachSetting.componentAttachClassName);
                         
-                    }
                 }
             }
         }
@@ -85,8 +97,6 @@ namespace UnityFigmaBridge.Editor.Extension
         {
             InstanceCache.Clear();
         }
-
-        
         private static void AttachComponent(GameObject gameObject, string className)
         {
             Type componentAttachmentType = Type.GetType(className);

@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using UnityFigmaBridge.Runtime.UI;
+using UnityFigmaBridge.Editor.Extension;
 
 namespace UnityFigmaBridge.Editor.PrototypeFlow
 {
@@ -36,6 +37,8 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
             if (matchingType == null)
             {
                 // No matching type found
+                // マッチしなかった場合に設定に基づくスクリプトのアタッチを試す
+                CustomComponentAttachManager.ApplySettingGameObject(gameObject);
                 return;
             }
             //Debug.Log($"Matching type found {className}");
@@ -212,6 +215,7 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
         /// <param name="figmaImportProcessData"></param>
         public static void BindBehaviours(FigmaImportProcessData figmaImportProcessData)
         {
+            CustomComponentAttachManager.OnStart();
             // Add all components and flowScreen prefabs, to apply behaviours
             var allComponentPrefabsToBindBehaviours = figmaImportProcessData.ComponentData.AllComponentPrefabs;
             allComponentPrefabsToBindBehaviours.AddRange(figmaImportProcessData.ScreenPrefabs);
@@ -226,6 +230,7 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
                 PrefabUtility.SaveAsPrefabAsset(instantiatedPrefab, prefabAssetPath);
                 PrefabUtility.UnloadPrefabContents(instantiatedPrefab);
             }
+            CustomComponentAttachManager.OnEnd();
         }
 
         /// <summary>
