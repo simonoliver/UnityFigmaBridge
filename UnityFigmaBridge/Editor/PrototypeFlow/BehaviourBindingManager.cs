@@ -25,23 +25,26 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
         /// <param name="gameObject"></param>
         private static void BindBehaviourToNode(GameObject gameObject, FigmaImportProcessData importProcessData)
         {
+			// カスタムコンポーネントのアタッチ設定をチェックして実行
+			CustomComponentAttachManager.ApplySettingGameObject(gameObject);
+
             // Add in any special behaviours driven by name or other rules. If special case, dont add any more behaviours
             bool specialCaseNode=AddSpecialBehavioursToNode(gameObject,importProcessData);
             if (specialCaseNode) return;
             
             var bindingNameSpace = importProcessData.Settings.ScreenBindingNamespace;
             var className = $"{gameObject.name}";
-           
             // We'll want to search all assemblies
             var matchingType = GetTypeByName(bindingNameSpace,className);
             if (matchingType == null)
             {
                 // No matching type found
-                // マッチしなかった場合に設定に基づくスクリプトのアタッチを試す
-                CustomComponentAttachManager.ApplySettingGameObject(gameObject);
                 return;
             }
             //Debug.Log($"Matching type found {className}");
+
+			// 同名型のコンポーネントアタッチ処理を試行
+			CustomComponentAttachManager.TryAttachComponent(gameObject, matchingType);
 
             if (!matchingType.IsSubclassOf(typeof(MonoBehaviour)))
             {

@@ -85,9 +85,11 @@ namespace UnityFigmaBridge.Editor.Extension
                 if (string.IsNullOrEmpty(attachSetting.attachTargetEndName) ||
                     objectName.EndsWith(attachSetting.attachTargetEndName))
                 {
-                    AttachComponent(
+                    Type componentAttachmentType = Type.GetType(attachSetting.componentAttachClassName);
+                    
+                    TryAttachComponent(
                         gameObject,
-                        attachSetting.componentAttachClassName);
+                        componentAttachmentType);
                         
                 }
             }
@@ -97,10 +99,15 @@ namespace UnityFigmaBridge.Editor.Extension
         {
             InstanceCache.Clear();
         }
-        private static void AttachComponent(GameObject gameObject, string className)
+        
+        /// <summary>
+        /// コンポーネントアタッチ用の処理を実行する
+        /// </summary>
+        /// <param name="gameObject">対象のゲームオブジェクト</param>
+        /// <param name="componentAttachmentType">コンポーネントアタッチする為のクラスタイプ</param>
+        /// <returns></returns>
+        public static void TryAttachComponent(GameObject gameObject, Type componentAttachmentType)
         {
-            Type componentAttachmentType = Type.GetType(className);
-
             // コンポーネントアタッチ用の基底クラスを継承しているかチェック
             if (typeof(IComponentAttachment).IsAssignableFrom(componentAttachmentType))
             {
