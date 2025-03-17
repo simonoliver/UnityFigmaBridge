@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using UnityFigmaBridge.Runtime.UI;
+using UnityFigmaBridge.Editor.Extension;
 
 namespace UnityFigmaBridge.Editor.PrototypeFlow
 {
@@ -24,13 +25,15 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
         /// <param name="gameObject"></param>
         private static void BindBehaviourToNode(GameObject gameObject, FigmaImportProcessData importProcessData)
         {
+			// カスタムコンポーネントのアタッチ設定をチェックして実行
+			CustomComponentAttachManager.ApplySettingGameObject(gameObject);
+
             // Add in any special behaviours driven by name or other rules. If special case, dont add any more behaviours
             bool specialCaseNode=AddSpecialBehavioursToNode(gameObject,importProcessData);
             if (specialCaseNode) return;
             
             var bindingNameSpace = importProcessData.Settings.ScreenBindingNamespace;
             var className = $"{gameObject.name}";
-           
             // We'll want to search all assemblies
             var matchingType = GetTypeByName(bindingNameSpace,className);
             if (matchingType == null)
@@ -39,6 +42,9 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
                 return;
             }
             //Debug.Log($"Matching type found {className}");
+
+			// 同名型のコンポーネントアタッチ処理を試行
+			CustomComponentAttachManager.TryAttachComponent(gameObject, matchingType);
 
             if (!matchingType.IsSubclassOf(typeof(MonoBehaviour)))
             {
@@ -212,6 +218,7 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
         /// <param name="figmaImportProcessData"></param>
         public static void BindBehaviours(FigmaImportProcessData figmaImportProcessData)
         {
+            CustomComponentAttachManager.OnStart();
             // Add all components and flowScreen prefabs, to apply behaviours
             var allComponentPrefabsToBindBehaviours = figmaImportProcessData.ComponentData.AllComponentPrefabs;
             allComponentPrefabsToBindBehaviours.AddRange(figmaImportProcessData.ScreenPrefabs);
@@ -226,6 +233,7 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
                 PrefabUtility.SaveAsPrefabAsset(instantiatedPrefab, prefabAssetPath);
                 PrefabUtility.UnloadPrefabContents(instantiatedPrefab);
             }
+            CustomComponentAttachManager.OnEnd();
         }
 
         /// <summary>
