@@ -156,6 +156,8 @@ Shader "Figma/FigmaImageShader"
                     clampedCornerRadius.w/=max(cornerSizeBottomRatio,cornerSizeLeftRatio);
                 
                     OUT.clamped_corner_radius=clampedCornerRadius;
+                #else
+                    OUT.clamped_corner_radius=0;
                 #endif
                 
 
