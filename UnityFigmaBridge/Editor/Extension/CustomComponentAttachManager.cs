@@ -51,6 +51,10 @@ namespace UnityFigmaBridge.Editor.Extension
             var allObjectsTransForm  = prefab.GetComponentsInChildren<Transform>();
             foreach (var transform in allObjectsTransForm)
             {
+                if (!transform)
+                {
+                    return;
+                }
                 GameObject gameObject = transform.gameObject;
                 CustomComponentAttachManager.ApplySettingGameObject(gameObject);
             }
@@ -71,6 +75,7 @@ namespace UnityFigmaBridge.Editor.Extension
             {
                 return;
             }
+
             if (setting?.attachSettingList == null)
             {
                 return;
@@ -120,25 +125,29 @@ namespace UnityFigmaBridge.Editor.Extension
         /// </summary>
         /// <param name="typeName"></param>
         /// <returns></returns>
-        private static IComponentAttachment GetComponentAttachmentInstance(string className)
+        private static IComponentAttachment GetComponentAttachmentInstance(string classNameFull)
         {
             // キャッシュから取得
-            if (InstanceCache.TryGetValue(className, out var componentAttachmentInstance))
+            if (InstanceCache.TryGetValue(classNameFull, out var componentAttachmentInstance))
             {
                 return componentAttachmentInstance;
-                
             }
-
-            var type = BehaviourBindingManager.GetTypeByName("", className);
-            if (type == null || typeof(IComponentAttachment).IsAssignableFrom(type))
+            int lastDotIndex = classNameFull.LastIndexOf('.');
+            var nameSpace = classNameFull.Substring(0, lastDotIndex);
+            var className = classNameFull.Substring(lastDotIndex + 1);
+            var type = BehaviourBindingManager.GetTypeByName(nameSpace, className);
+            if (type == null)
             {
                 return null;
             }
             
             // なければ生成
             componentAttachmentInstance = (IComponentAttachment)Activator.CreateInstance(type);
-            InstanceCache.Add(className, componentAttachmentInstance);
-
+            if (componentAttachmentInstance != null)
+            {
+                InstanceCache.Add(classNameFull, componentAttachmentInstance);
+            }
+            
             return componentAttachmentInstance;
         }
         
@@ -154,22 +163,20 @@ namespace UnityFigmaBridge.Editor.Extension
                 return null;
             }
             
-            var typeName = type.Name;
+            var typeName = type.FullName;
             // キャッシュから取得
             if (InstanceCache.TryGetValue(typeName, out var componentAttachmentInstance))
             {
                 return componentAttachmentInstance;
                 
             }
-            
-            if (typeof(IComponentAttachment).IsAssignableFrom(type))
-            {
-                return null;
-            }
-            
+
             // なければ生成
             componentAttachmentInstance = (IComponentAttachment)Activator.CreateInstance(type);
-            InstanceCache.Add(typeName, componentAttachmentInstance);
+            if (componentAttachmentInstance != null)
+            {
+                InstanceCache.Add(typeName, componentAttachmentInstance);
+            }
 
             return componentAttachmentInstance;
         }
