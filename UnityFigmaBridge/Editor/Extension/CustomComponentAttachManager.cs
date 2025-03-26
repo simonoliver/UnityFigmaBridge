@@ -162,7 +162,10 @@ namespace UnityFigmaBridge.Editor.Extension
             {
                 return null;
             }
-            
+            if (!typeof(IComponentAttachment).IsAssignableFrom(type))
+            {
+                return null;
+            }
             var typeName = type.FullName;
             // キャッシュから取得
             if (InstanceCache.TryGetValue(typeName, out var componentAttachmentInstance))
