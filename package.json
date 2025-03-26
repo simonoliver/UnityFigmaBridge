@@ -13,7 +13,7 @@
   "license": "MIT",
   "unity": "2021.3",
   "unityRelease": "0f1",
-  "version": "1.0.8+techcross.1",
+  "version": "1.0.8+techcross.2",
   "type": "library",
   "hideInEditor": false,
   "dependencies": {
