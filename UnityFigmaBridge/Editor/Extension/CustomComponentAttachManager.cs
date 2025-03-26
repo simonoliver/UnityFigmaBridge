@@ -53,7 +53,7 @@ namespace UnityFigmaBridge.Editor.Extension
             {
                 if (!transform)
                 {
-                    return;
+                    continue;
                 }
                 GameObject gameObject = transform.gameObject;
                 CustomComponentAttachManager.ApplySettingGameObject(gameObject);
