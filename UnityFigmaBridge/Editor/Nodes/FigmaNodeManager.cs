@@ -34,6 +34,20 @@ namespace UnityFigmaBridge.Editor.Nodes
                     var needsImageComponent = node.fills.Length > 0 || node.strokes.Length > 0;
                     if (NodeIsSubstitution(node, figmaImportProcessData)) break;
                     if (!needsImageComponent) break;
+                    
+                    // 9Sliceの場合、スライスに成功すれば
+                    if(node.Is9Slice() && SliceImage(node))
+                    {
+                        var image = nodeGameObject.GetComponent<Image>();
+                        if (image == null) image = nodeGameObject.AddComponent<Image>();
+                        var firstFill = node.fills[0];
+                        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(FigmaPaths.GetPathForImageFill(firstFill.imageRef));
+                        image.sprite = sprite;
+                        image.type = Image.Type.Sliced;
+
+                        break;
+                    }
+                    
                     // Create as needed (in case an override has specified new properties)
                     var figmaImage = nodeGameObject.GetComponent<FigmaImage>();
                     if (figmaImage == null) figmaImage = nodeGameObject.AddComponent<FigmaImage>();
@@ -411,6 +425,59 @@ namespace UnityFigmaBridge.Editor.Nodes
                 default:
                     return false;
             }
+        }
+        
+        public static bool SliceImage(Node node)
+        {
+            if(node.fills == null) return false;
+            if(node.fills.Length <= 0) return false;
+            var fill = node.fills[0];
+            if (fill.imageRef == null)
+            {
+                Debug.LogWarning($"9Slice imageRef null : {node.name}");
+                return false;
+            }
+            
+            var bounds = node.absoluteBoundingBox;
+            var left = 0f;
+            var top = 0f;
+            var right = 0f;
+            var bottom = 0f;
+            
+            // 子要素のレイアウト制約と位置からボーダー取得
+            foreach (var child in node.children)
+            {
+                var childRect = child.absoluteBoundingBox;
+                switch (child.constraints.horizontal)
+                {
+                    case LayoutConstraint.HorizontalLayoutConstraint.LEFT:
+                        left = Mathf.Max(left, (childRect.x + childRect.width) - bounds.x);
+                        break;
+                    case LayoutConstraint.HorizontalLayoutConstraint.RIGHT:
+                        right = Mathf.Max(right, (bounds.x + bounds.width) - childRect.x);
+                        break;
+                }
+
+                switch (child.constraints.vertical)
+                {
+                    case LayoutConstraint.VerticalLayoutConstraint.TOP:
+                        top = Mathf.Max(top, (childRect.y + childRect.height) - bounds.y);
+                        break;
+                    case LayoutConstraint.VerticalLayoutConstraint.BOTTOM:
+                        bottom = Mathf.Max(bottom, (bounds.y + bounds.height) - childRect.y);
+                        break;
+                }
+            }
+
+            Vector4 borders = new Vector4(left, bottom, right, top);
+            
+            var imagePath = FigmaPaths.GetPathForImageFill(fill.imageRef);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(imagePath);
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spriteBorder = borders;
+            importer.SaveAndReimport();
+            return true;
         }
     }
 }
