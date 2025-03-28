@@ -2,6 +2,8 @@
 using System.Linq;
 using UnityEngine;
 
+using static UnityFigmaBridge.Editor.Utils.NameCheckUtils;
+
 namespace UnityFigmaBridge.Editor.FigmaApi
 {
     /// <summary>
