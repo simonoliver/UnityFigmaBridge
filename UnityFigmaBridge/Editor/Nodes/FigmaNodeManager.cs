@@ -35,12 +35,11 @@ namespace UnityFigmaBridge.Editor.Nodes
                     if (NodeIsSubstitution(node, figmaImportProcessData)) break;
                     if (!needsImageComponent) break;
                     
-                    // 9Sliceの場合
-                    if(node.Is9Slice())
+                    // 9Sliceの場合、スライスに成功すれば
+                    if(node.Is9Slice() && SliceImage(node))
                     {
                         var image = nodeGameObject.GetComponent<Image>();
                         if (image == null) image = nodeGameObject.AddComponent<Image>();
-                        SliceImage(node);
                         var firstFill = node.fills[0];
                         var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(FigmaPaths.GetPathForImageFill(firstFill.imageRef));
                         image.sprite = sprite;
@@ -428,10 +427,16 @@ namespace UnityFigmaBridge.Editor.Nodes
             }
         }
         
-        public static void SliceImage(Node node)
+        public static bool SliceImage(Node node)
         {
-            if(node.fills == null) return;
-            if(node.fills.Length <= 0) return;
+            if(node.fills == null) return false;
+            if(node.fills.Length <= 0) return false;
+            var fill = node.fills[0];
+            if (fill.imageRef == null)
+            {
+                Debug.LogWarning($"9Slice imageRef null : {node.name}");
+                return false;
+            }
             
             var bounds = node.absoluteBoundingBox;
             var left = 0f;
@@ -466,13 +471,13 @@ namespace UnityFigmaBridge.Editor.Nodes
 
             Vector4 borders = new Vector4(left, bottom, right, top);
             
-            var fill = node.fills[0];
             var imagePath = FigmaPaths.GetPathForImageFill(fill.imageRef);
             var importer = (TextureImporter)AssetImporter.GetAtPath(imagePath);
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;
             importer.spriteBorder = borders;
             importer.SaveAndReimport();
+            return true;
         }
     }
 }
