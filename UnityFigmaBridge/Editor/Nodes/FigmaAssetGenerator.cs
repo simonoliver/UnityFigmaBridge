@@ -181,7 +181,9 @@ namespace UnityFigmaBridge.Editor.Nodes
             FigmaLayoutManager.ApplyLayoutPropertiesForNode(nodeGameObject,figmaNode,figmaImportProcessData,out var scrollContentGameObject);
             
             // Build children for this node, if they exist
-            if (figmaNode.children != null)
+			// 9Sliceオブジェクトの子要素の場合生成しない
+            if (figmaNode.children != null && 
+                !figmaNode.Is9Slice())
             {
                 // We'll track any active masking when building child nodes, as masked nodes need to be parented
                 Mask activeMaskObject=null;

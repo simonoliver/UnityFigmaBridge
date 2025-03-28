@@ -247,6 +247,10 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             
             //  Recursively cycle through all children
             if (node.children == null) return;
+            
+            // 9Sliceの子要素は画像不要なので無視する
+            if (node.Is9Slice()) return;
+            
             foreach (var childNode in node.children)
                 GetAllImageFillIdsForNode(childNode, imageFillList,recursiveDepth+1,includedPage,withinComponentDefinition);
             
