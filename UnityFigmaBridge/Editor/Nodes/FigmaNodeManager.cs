@@ -191,6 +191,36 @@ namespace UnityFigmaBridge.Editor.Nodes
                         }
                     }
                     
+                    var fill = node.fills[0];
+                    switch (fill.type)
+                    {
+                        case Paint.PaintType.GRADIENT_LINEAR:
+                            if (fill.gradientHandlePositions.Length <= 1)
+                            {
+                                break;
+                            }
+                            
+                            text.enableVertexGradient = true;
+                            // 変化量の絶対値取得
+                            float xChange = Math.Abs(fill.gradientHandlePositions[0].x - fill.gradientHandlePositions[1].x);
+                            float yChange = Math.Abs(fill.gradientHandlePositions[0].y - fill.gradientHandlePositions[1].y);
+                            
+                            // 縦グラデだけ対応
+                            if (xChange < yChange)
+                            {
+                                int topIndex =
+                                    fill.gradientHandlePositions[0].y < fill.gradientHandlePositions[1].y ? 0 : 1;
+                                var topColorData = fill.gradientStops[topIndex].color;
+                                var bottomColorData = fill.gradientStops[topIndex == 0 ? 1 : 0].color;
+                                
+                                Color topColor = new Color(topColorData.r, topColorData.g, topColorData.b, topColorData.a);
+                                Color bottomColor = new Color(bottomColorData.r, bottomColorData.g, bottomColorData.b, bottomColorData.a);
+                                //　topLeft, topRight, bottomLeft, bottomRight
+                                text.colorGradient = new VertexGradient(topColor, topColor, bottomColor, bottomColor);
+                            }
+                            break;
+                    }
+                    
                     // If no material variation, ignore
                     if (!hasShadowEffect && node.strokes.Length == 0) return;
                     
