@@ -188,7 +188,13 @@ namespace UnityFigmaBridge.Editor.Fonts
             newMaterialPreset.SetKeyword(new LocalKeyword(newMaterialPreset.shader,"UNDERLAY_ON"),shadow);
             
             //TODO:暫定の値を入れる 正確にFigimaと一緒にはならない
-            newMaterialPreset.SetFloat("_FaceDilate",0.25f);
+            var faceDilate = 0.25f;
+            // アウトライン有効な時は、faceDilateも増やしてみる
+            if (outline)
+            {
+                faceDilate = Mathf.Min(1.0f, faceDilate + (outlineThickness * 0.5f));
+            }
+            newMaterialPreset.SetFloat("_FaceDilate",faceDilate);
             newMaterialPreset.SetFloat("_Sharpness",1.0f);
 
             if (shadow)
