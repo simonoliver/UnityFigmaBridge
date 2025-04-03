@@ -340,7 +340,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                     {
                         case FigmaDownloadQueueItem.FigmaFileType.ImageFill:
                             // We'll want to allow repeating textures to support "tile" mode
-                            textureImporter.wrapMode = TextureWrapMode.Repeat;
+                            textureImporter.wrapMode = TextureWrapMode.Clamp;
                             break;
                         case FigmaDownloadQueueItem.FigmaFileType.ServerRenderedImage:
                             // For server rendered images we want to clamp the texture
@@ -390,6 +390,12 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 {
                     // 此処切り替えるとプレハブから画像設定が消し飛ぶ
                     textureImporter.spriteImportMode = SpriteImportMode.Single;
+                    isDirty = true;
+                }
+                
+                if (textureImporter.wrapMode != TextureWrapMode.Clamp)
+                {
+                    textureImporter.wrapMode = TextureWrapMode.Clamp;
                     isDirty = true;
                 }
 
