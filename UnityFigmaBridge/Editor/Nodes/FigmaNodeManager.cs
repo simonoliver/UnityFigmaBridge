@@ -503,6 +503,10 @@ namespace UnityFigmaBridge.Editor.Nodes
             
             var imagePath = FigmaPaths.GetPathForImageFill(fill.imageRef);
             var importer = (TextureImporter)AssetImporter.GetAtPath(imagePath);
+			if (importer == null)
+            {
+                return false;
+            }
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;
             importer.spriteBorder = borders;
