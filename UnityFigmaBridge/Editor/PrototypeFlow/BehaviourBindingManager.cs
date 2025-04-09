@@ -27,6 +27,7 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
         {
 			// カスタムコンポーネントのアタッチ設定をチェックして実行
 			CustomComponentAttachManager.ApplySettingGameObject(gameObject);
+			if(!gameObject) return;
 
             // Add in any special behaviours driven by name or other rules. If special case, dont add any more behaviours
             bool specialCaseNode=AddSpecialBehavioursToNode(gameObject,importProcessData);
@@ -45,6 +46,7 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
 
 			// 同名型のコンポーネントアタッチ処理を試行
 			CustomComponentAttachManager.TryAttachComponent(gameObject, matchingType);
+			if(!gameObject) return;
 
             if (!matchingType.IsSubclassOf(typeof(MonoBehaviour)))
             {
