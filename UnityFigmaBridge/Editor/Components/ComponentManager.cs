@@ -166,6 +166,8 @@ namespace UnityFigmaBridge.Editor.Components
                 var parentNodeData =  figmaImportProcessData.NodeLookupDictionary[placeholder.ParentNodeId];
                 if (nodeData != null)
                 {
+                    ApplyComponentProperties(nodeData, addedReplacementComponent, figmaImportProcessData);
+                    
                     // Recursively apply all properties for this node object (such as text, image fills etc)
                     ApplyFigmaProperties(nodeData, addedReplacementComponent, parentNodeData, figmaImportProcessData);
                 }
@@ -289,6 +291,47 @@ namespace UnityFigmaBridge.Editor.Components
             }
 
             return null;
+        }
+
+        private static void ApplyComponentProperties(Node nodeData, GameObject obj, FigmaImportProcessData figmaImportProcessData)
+        {
+            if (nodeData.componentId == null) return;
+
+            var nodeComponentProperties = nodeData.componentProperties;
+            if (nodeComponentProperties == null || nodeComponentProperties.Count <= 0) return;
+
+            var componentData = figmaImportProcessData.NodeLookupDictionary[nodeData.componentId];
+            if (componentData == null) return;
+
+            var componentPropertyDefinitions = componentData.componentPropertyDefinitions;
+            if (componentPropertyDefinitions == null || componentPropertyDefinitions.Count <= 0) return;
+
+
+            foreach (var componentProperty in nodeComponentProperties)
+            {
+                var key = componentProperty.Key;
+                var property = componentProperty.Value;
+
+                switch (property.type)
+                {
+                    // インスタンス入れ替え
+                    case ComponentPropertyType.INSTANCE_SWAP:
+                        if (!componentPropertyDefinitions.TryGetValue(key, out var value))
+                        {
+                            break;
+                        }
+                        
+                        var swapDefaultNode = figmaImportProcessData.NodeLookupDictionary[value.defaultValue];
+                        var replacementNode = figmaImportProcessData.NodeLookupDictionary[property.value];
+
+                        var marker = obj.AddComponent<InstanceSwapMarker>();
+                        var swapComponentPrefab = figmaImportProcessData.ComponentData.GetComponentPrefab(replacementNode.id);
+                        marker.targetName = swapDefaultNode.name;
+                        marker.replacementPrefab = swapComponentPrefab;
+
+                        break;
+                }
+            }
         }
     }
 }
