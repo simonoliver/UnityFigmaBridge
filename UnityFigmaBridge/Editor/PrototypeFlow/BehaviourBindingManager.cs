@@ -230,15 +230,8 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
             {
                 string prefabAssetPath = AssetDatabase.GetAssetPath(sourcePrefab);
                 GameObject instantiatedPrefab = PrefabUtility.LoadPrefabContents(prefabAssetPath);
-                BindBehaviourToNodeAndChildren(instantiatedPrefab,figmaImportProcessData);
-				
-				// 削除マーカーが存在するオブジェクトは削除する
-                var deleteMarkerArray = instantiatedPrefab.GetComponentsInChildren<DeleteInstanceMarker>();
-                foreach (var deleteMaker in deleteMarkerArray)
-                {
-                    Undo.DestroyObjectImmediate(deleteMaker.gameObject);
-                }
-
+                BindBehaviourToNodeAndChildren(instantiatedPrefab, figmaImportProcessData);
+                
                 // Write prefab with changes
                 PrefabUtility.SaveAsPrefabAsset(instantiatedPrefab, prefabAssetPath);
                 PrefabUtility.UnloadPrefabContents(instantiatedPrefab);
@@ -300,8 +293,7 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
                 newObj.transform.rotation = rotation;
                 newObj.transform.localScale = scale;
 
-                // 元のオブジェクトに削除用のマーカーをつける
-                targetRectTransform.gameObject.AddComponent<DeleteInstanceMarker>();
+                Undo.DestroyObjectImmediate(targetRectTransform.gameObject);
             }
         }
     }
