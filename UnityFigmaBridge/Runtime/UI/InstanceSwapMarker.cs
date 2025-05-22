@@ -16,12 +16,4 @@ namespace UnityFigmaBridge.Runtime.UI
         /// </summary>
         public GameObject replacementPrefab;
     }
-
-    /// <summary>
-    /// 削除対象のインスタンスを示すマーカー
-    /// </summary>
-    public class DeleteInstanceMarker : MonoBehaviour
-    {
-    }
-
 }
