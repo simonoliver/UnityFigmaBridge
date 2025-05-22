@@ -25,6 +25,7 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
         /// <param name="gameObject"></param>
         private static void BindBehaviourToNode(GameObject gameObject, FigmaImportProcessData importProcessData)
         {
+			ApplyInsatanceSwap(gameObject);
 			// カスタムコンポーネントのアタッチ設定をチェックして実行
 			CustomComponentAttachManager.ApplySettingGameObject(gameObject);
 			if(!gameObject) return;
@@ -230,7 +231,14 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
                 string prefabAssetPath = AssetDatabase.GetAssetPath(sourcePrefab);
                 GameObject instantiatedPrefab = PrefabUtility.LoadPrefabContents(prefabAssetPath);
                 BindBehaviourToNodeAndChildren(instantiatedPrefab,figmaImportProcessData);
-               
+				
+				// 削除マーカーが存在するオブジェクトは削除する
+                var deleteMarkerArray = instantiatedPrefab.GetComponentsInChildren<DeleteInstanceMarker>();
+                foreach (var deleteMaker in deleteMarkerArray)
+                {
+                    Undo.DestroyObjectImmediate(deleteMaker.gameObject);
+                }
+
                 // Write prefab with changes
                 PrefabUtility.SaveAsPrefabAsset(instantiatedPrefab, prefabAssetPath);
                 PrefabUtility.UnloadPrefabContents(instantiatedPrefab);
@@ -255,6 +263,46 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
            }
            // Finally apply to this node
            BindBehaviourToNode(targetGameObject, figmaImportProcessData);
+        }
+
+        private static void ApplyInsatanceSwap(GameObject gameObject)
+        {
+            var swapMarkerArray = gameObject.GetComponents<InstanceSwapMarker>();
+            if (swapMarkerArray == null || swapMarkerArray.Length <= 0) return;
+            
+            var rectTransformArray = gameObject.GetComponentsInChildren<RectTransform>();
+            foreach (var swapMarker in swapMarkerArray)
+            {
+                // 入れ替え用の情報を取得してマーカー削除
+                var targetName = swapMarker.targetName;
+                var replacementPrefab = swapMarker.replacementPrefab;
+                Undo.DestroyObjectImmediate(swapMarker);
+                var targetRectTransform = rectTransformArray.FirstOrDefault(rt => rt.name == targetName);
+                if (targetRectTransform == null) continue;
+                GameObject prefabRoot = PrefabUtility.GetCorrespondingObjectFromSource(targetRectTransform.gameObject);
+                // 置き換える
+                if (prefabRoot == null) continue;
+                
+                Transform parent = targetRectTransform.parent;
+                Vector3 position = targetRectTransform.position;
+                Quaternion rotation = targetRectTransform.rotation;
+                Vector3 scale = targetRectTransform.localScale;
+
+                GameObject newObj = (GameObject)PrefabUtility.InstantiatePrefab(replacementPrefab, parent);
+                var targetObjRectTransform = targetRectTransform.GetComponent<RectTransform>();
+                var newObjRectTransform = newObj.GetComponent<RectTransform>();
+                if (newObjRectTransform || targetObjRectTransform)
+                {
+                    newObjRectTransform.pivot = targetObjRectTransform.pivot;
+                }
+
+                newObj.transform.position = position;
+                newObj.transform.rotation = rotation;
+                newObj.transform.localScale = scale;
+
+                // 元のオブジェクトに削除用のマーカーをつける
+                targetRectTransform.gameObject.AddComponent<DeleteInstanceMarker>();
+            }
         }
     }
 }

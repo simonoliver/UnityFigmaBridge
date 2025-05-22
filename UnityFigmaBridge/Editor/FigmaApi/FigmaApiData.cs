@@ -443,6 +443,9 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         // FOR ELLIPSE
         public ArcData arcData;
         
+        
+        public Dictionary<string, ComponentProperty> componentProperties;
+        public Dictionary<string, ComponentPropertyDefinition> componentPropertyDefinitions;
     }
     
     public class Color
@@ -1101,6 +1104,51 @@ A map of OpenType feature flags to 1 or 0, 1 if it is enabled and 0 if it is dis
         public string name;
     }
    
+    /// <summary>
+    /// コンポーネントプロパティ種類
+    /// https://www.figma.com/plugin-docs/api/ComponentPropertyType/
+    /// </summary>
+    public enum ComponentPropertyType
+    {
+        BOOLEAN,        // 真偽値
+        TEXT,           // 文字列
+        INSTANCE_SWAP,  // インスタンス置き換え
+        VARIANT         // ヴァリアント
+    }
     
+    /// <summary>
+    /// コンポーネントプロパティ
+    /// https://www.figma.com/plugin-docs/api/ComponentProperties/
+    /// </summary>
+    public class ComponentProperty
+    {
+        /// <summary>
+        /// プロパティの種類
+        /// </summary>
+        public ComponentPropertyType type;
+        
+        /// <summary>
+        /// プロパティの値
+        /// <para>INSTANCE_SWAP；コンポーネントID</para>
+        /// </summary>
+        public string value;
+    }
+
+    /// <summary>
+    /// コンポーネントプロパティの定義
+    /// https://www.figma.com/plugin-docs/api/ComponentPropertyDefinitions/
+    /// </summary>
+    public class ComponentPropertyDefinition
+    {
+        /// <summary>
+        /// プロパティの種類
+        /// </summary>
+        public ComponentPropertyType type;
+        
+        /// <summary>
+        /// 初期値
+        /// </summary>
+        public string defaultValue;
+    }
     
 }
