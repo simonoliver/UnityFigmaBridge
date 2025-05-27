@@ -287,6 +287,8 @@ namespace UnityFigmaBridge.Editor.PrototypeFlow
                 if (newObjRectTransform || targetObjRectTransform)
                 {
                     newObjRectTransform.pivot = targetObjRectTransform.pivot;
+					scale.x *= targetObjRectTransform.rect.size.x / newObjRectTransform.rect.size.x;
+                    scale.y *= targetObjRectTransform.rect.size.y / newObjRectTransform.rect.size.y;
                 }
 
                 newObj.transform.position = position;
