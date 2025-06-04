@@ -229,6 +229,9 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         private static void GetAllImageFillIdsForNode(Node node, List<string> imageFillList,int recursiveDepth,
             bool includedPage, bool withinComponentDefinition )
         {
+            // ダミー要素の場合は自身も、子も不要なので戻る
+            if (node.IsDummyNode()) return;
+            
             // We want to ignore random images placed on the root not in frames as they might be simple reference images
             var ignoreNodeFill = recursiveDepth <=1 && node.type != NodeType.FRAME && node.type != NodeType.COMPONENT;
             // We'll also ignore if this page is not included in the download list and we're not within a component definition

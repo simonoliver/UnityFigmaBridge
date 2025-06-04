@@ -114,7 +114,9 @@ namespace UnityFigmaBridge.Editor.Nodes
         private static GameObject BuildFigmaNode(Node figmaNode, RectTransform parentTransform,  Node parentFigmaNode,
             int nodeRecursionDepth, FigmaImportProcessData figmaImportProcessData,bool includedPageObject, bool withinComponentDefinition)
         {
-
+            // ダミーオブジェクトは生成しない
+            if (figmaNode.IsDummyNode()) return null;
+            
             // Create a gameObject for this figma node and parent to parent transform
             var nodeGameObject = new GameObject(figmaNode.name, typeof(RectTransform));
             nodeGameObject.transform.SetParent(parentTransform, false);
