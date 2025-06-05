@@ -15,5 +15,14 @@ namespace UnityFigmaBridge.Editor.Utils
         {
             return node.name.EndsWith("_9s");
         }
+        
+        /// <summary>
+        /// ダミーかどうか　ダミーの場合は自身も子オブジェクトも生成しない
+        /// </summary>
+        /// <param name="node">Figmaノード</param>
+        public static bool IsDummyNode(this Node node)
+        {
+            return node.name.Equals("DummyNode");
+        }
     }
 }
