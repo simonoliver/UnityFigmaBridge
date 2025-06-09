@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityFigmaBridge.Editor.Extension.ImportCache;
 using UnityFigmaBridge.Editor.FigmaApi;
 using UnityFigmaBridge.Editor.Nodes;
 using UnityFigmaBridge.Editor.PrototypeFlow;
@@ -15,7 +16,6 @@ namespace UnityFigmaBridge.Editor.Components
 {
     public static class ComponentManager
     {
-        
        /// <summary>
        /// Remove component placeholders that are used to mark instantiation locations
        /// </summary>
@@ -67,10 +67,26 @@ namespace UnityFigmaBridge.Editor.Components
             // If this is part of a component set (eg a variant), append the name of the component set to the component name
             var nodeName=parentNode is { type: NodeType.COMPONENT_SET } ? $"{parentNode.name}-{node.name}" : node.name;
             var componentCount = figmaImportProcessData.ComponentData.GetComponentNameCount(nodeName);
-            var prefabAssetPath = FigmaPaths.GetPathForComponentPrefab(nodeName,componentCount);
             figmaImportProcessData.ComponentData.IncrementComponentNameCount(nodeName,1);
+
+            // ここですでにキャッシュされたファイルが存在する場合はその場所に生成する
+            // TODO:キャッシュが存在する場合は、ここで元のPrefabのコピー取って、アタッチされているコンポーネントの情報を上書きする？
+            var cacheMap = FigmaAssetGuidMapCreator.CreateMap(FigmaAssetGuidMapCreator.AssetType.Component);
+            var prefabAssetPath = cacheMap.GetAssetPath(node.id);
+            var isCache = prefabAssetPath != string.Empty;
+            if (!isCache)
+            {
+                prefabAssetPath = FigmaPaths.GetPathForComponentPrefab(nodeName,componentCount);
+            }
+            
             var componentPrefab = PrefabUtility.SaveAsPrefabAssetAndConnect(nodeGameObject, prefabAssetPath, InteractionMode.UserAction);
             figmaImportProcessData.ComponentData.RegisterComponentPrefab(node.id,componentPrefab);
+
+            if (!isCache)
+            {
+                var guid = AssetDatabase.AssetPathToGUID(prefabAssetPath);
+                cacheMap.SetMapping(node.id, guid, nodeName);
+            }
         }
         
         /// <summary>

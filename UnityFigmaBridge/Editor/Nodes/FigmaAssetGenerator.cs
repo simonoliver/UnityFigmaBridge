@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityFigmaBridge.Editor.Components;
+using UnityFigmaBridge.Editor.Extension.ImportCache;
 using UnityFigmaBridge.Editor.FigmaApi;
 using UnityFigmaBridge.Editor.PrototypeFlow;
 using UnityFigmaBridge.Editor.Utils;
@@ -59,6 +60,8 @@ namespace UnityFigmaBridge.Editor.Nodes
             
             // At the very end, we want to apply figmaNode behaviour where required
             BehaviourBindingManager.BindBehaviours(figmaImportProcessData);
+            
+            FigmaAssetGuidMapCreator.SaveAllMap();
         }
 
 
