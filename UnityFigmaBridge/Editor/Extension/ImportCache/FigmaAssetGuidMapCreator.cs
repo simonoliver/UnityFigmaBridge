@@ -13,17 +13,23 @@ namespace UnityFigmaBridge.Editor.Extension.ImportCache
             Component,
         }
 
-        public static Dictionary<string, FigmaAssetGuidMap> _mapContenar = new Dictionary<string, FigmaAssetGuidMap>();
+        public static Dictionary<string, FigmaAssetGuidMapData> _mapContenar = new Dictionary<string, FigmaAssetGuidMapData>();
 
-        public static FigmaAssetGuidMap CreateMap(AssetType assetType)
+        public static FigmaAssetGuidMapData CreateMap(AssetType assetType)
         {
             var path = ComponentCacheDataDir + assetType.ToString() + ".asset";
             if (_mapContenar.TryGetValue(path, out var map))
             {
                 return map;
             }
+
+            map = AssetDatabase.LoadAssetAtPath<FigmaAssetGuidMapData>(path);
+            if (map)
+            {
+                return map;
+            }
             
-            map = ScriptableObject.CreateInstance<FigmaAssetGuidMap>();
+            map = ScriptableObject.CreateInstance<FigmaAssetGuidMapData>();
             _mapContenar.Add(path, map);
             
             // ディレクトリなければ生成

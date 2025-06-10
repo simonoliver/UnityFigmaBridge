@@ -73,20 +73,15 @@ namespace UnityFigmaBridge.Editor.Components
             // TODO:キャッシュが存在する場合は、ここで元のPrefabのコピー取って、アタッチされているコンポーネントの情報を上書きする？
             var cacheMap = FigmaAssetGuidMapCreator.CreateMap(FigmaAssetGuidMapCreator.AssetType.Component);
             var prefabAssetPath = cacheMap.GetAssetPath(node.id);
-            var isCache = prefabAssetPath != string.Empty;
-            if (!isCache)
+            if (string.IsNullOrEmpty(prefabAssetPath))
             {
                 prefabAssetPath = FigmaPaths.GetPathForComponentPrefab(nodeName,componentCount);
             }
             
             var componentPrefab = PrefabUtility.SaveAsPrefabAssetAndConnect(nodeGameObject, prefabAssetPath, InteractionMode.UserAction);
             figmaImportProcessData.ComponentData.RegisterComponentPrefab(node.id,componentPrefab);
-
-            if (!isCache)
-            {
-                var guid = AssetDatabase.AssetPathToGUID(prefabAssetPath);
-                cacheMap.SetMapping(node.id, guid, nodeName);
-            }
+            var guid = AssetDatabase.AssetPathToGUID(prefabAssetPath);
+            cacheMap.Add(node.id, guid, nodeName);
         }
         
         /// <summary>

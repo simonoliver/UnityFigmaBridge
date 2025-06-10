@@ -7,26 +7,18 @@ using UnityEngine.Serialization;
 
 namespace UnityFigmaBridge.Editor.Extension.ImportCache
 {
-    public class FigmaAssetGuidMap : ScriptableObject
+    public class FigmaAssetGuidMapData : ScriptableObject
     {
         // TODO：ここは後々 Dictionary にする
-        public List<AssetEntryData> assetEntryDataList = new List<AssetEntryData>();
+        public List<AssetMapEntry> assetEntryDataList = new List<AssetMapEntry>();
         [Serializable]
-        public class AssetEntryData
+        public class AssetMapEntry
         {
+            public string assetName;
             public string figmaNodeId;
             public string unityAssetGuid;
-            public string assetName;
         }
-
-        public GameObject LoadPrefab(string nodeId)
-        {
-            var path = GetAssetPath(nodeId);
-            if (path == string.Empty) return null;
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            return prefab;
-        }
-
+        
         public string GetAssetPath(string nodeId)
         {
             var guid = GetGuidByNodeId(nodeId);
@@ -39,17 +31,22 @@ namespace UnityFigmaBridge.Editor.Extension.ImportCache
             return assetEntryDataList.FirstOrDefault(e => e.figmaNodeId == nodeId)?.unityAssetGuid;
         }
 
-        public void SetMapping(string nodeId, string guid, string assetName)
+        public void Add(string nodeId, string guid, string assetName)
         {
             var entry = assetEntryDataList.FirstOrDefault(e => e.figmaNodeId == nodeId);
             if (entry == null)
             {
-                assetEntryDataList.Add(new AssetEntryData { figmaNodeId = nodeId, unityAssetGuid = guid, assetName = assetName });
+                assetEntryDataList.Add(new AssetMapEntry { figmaNodeId = nodeId, unityAssetGuid = guid, assetName = assetName });
                 EditorUtility.SetDirty(this);
             }
             else
             {
-                entry.unityAssetGuid = guid;
+                if (!guid.Equals(entry.unityAssetGuid) || !assetName.Equals(entry.assetName))
+                {
+                    EditorUtility.SetDirty(this);
+                    entry.unityAssetGuid = guid;
+                    entry.assetName = assetName;
+                }
             }
         }
     }
