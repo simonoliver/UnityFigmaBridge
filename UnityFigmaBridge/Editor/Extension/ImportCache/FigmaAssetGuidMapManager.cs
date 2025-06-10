@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UnityFigmaBridge.Editor.Extension.ImportCache
 {
-    public static class FigmaAssetGuidMapCreator
+    public static class FigmaAssetGuidMapManager
     {
         public static string ComponentCacheDataDir = "Assets/Figma/Custom/Cache/";
         public enum AssetType

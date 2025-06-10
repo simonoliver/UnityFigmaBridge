@@ -61,7 +61,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             // At the very end, we want to apply figmaNode behaviour where required
             BehaviourBindingManager.BindBehaviours(figmaImportProcessData);
             
-            FigmaAssetGuidMapCreator.SaveAllMap();
+            FigmaAssetGuidMapManager.SaveAllMap();
         }
 
 

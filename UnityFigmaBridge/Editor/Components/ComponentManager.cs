@@ -71,7 +71,7 @@ namespace UnityFigmaBridge.Editor.Components
 
             // ここですでにキャッシュされたファイルが存在する場合はその場所に生成する
             // TODO:キャッシュが存在する場合は、ここで元のPrefabのコピー取って、アタッチされているコンポーネントの情報を上書きする？
-            var cacheMap = FigmaAssetGuidMapCreator.CreateMap(FigmaAssetGuidMapCreator.AssetType.Component);
+            var cacheMap = FigmaAssetGuidMapManager.CreateMap(FigmaAssetGuidMapManager.AssetType.Component);
             var prefabAssetPath = cacheMap.GetAssetPath(node.id);
             if (string.IsNullOrEmpty(prefabAssetPath))
             {
