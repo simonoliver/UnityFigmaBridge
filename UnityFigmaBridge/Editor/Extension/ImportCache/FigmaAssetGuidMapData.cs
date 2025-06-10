@@ -9,7 +9,6 @@ namespace UnityFigmaBridge.Editor.Extension.ImportCache
 {
     public class FigmaAssetGuidMapData : ScriptableObject
     {
-        // TODO：ここは後々 Dictionary にする
         public List<AssetMapEntry> assetEntryDataList = new List<AssetMapEntry>();
         [Serializable]
         public class AssetMapEntry
