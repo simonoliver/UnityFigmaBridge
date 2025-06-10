@@ -20,12 +20,15 @@ namespace UnityFigmaBridge.Editor.Extension.ImportCache
             var path = ComponentCacheDataDir + assetType.ToString() + ".asset";
             if (_mapContenar.TryGetValue(path, out var map))
             {
+                _mapContenar.TryAdd(path, map);
                 return map;
             }
 
             map = AssetDatabase.LoadAssetAtPath<FigmaAssetGuidMapData>(path);
             if (map)
             {
+                map.Initialize(); // 作成済みのファイルをロードした時だけ初期化
+                _mapContenar.TryAdd(path, map);
                 return map;
             }
             
@@ -47,6 +50,10 @@ namespace UnityFigmaBridge.Editor.Extension.ImportCache
 
         public static void SaveAllMap()
         {
+            foreach (var map in _mapContenar)
+            {
+                map.Value.FinalizeMap();
+            }
             AssetDatabase.SaveAssets();
             _mapContenar.Clear();
         }

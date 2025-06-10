@@ -10,12 +10,36 @@ namespace UnityFigmaBridge.Editor.Extension.ImportCache
     public class FigmaAssetGuidMapData : ScriptableObject
     {
         public List<AssetMapEntry> assetEntryDataList = new List<AssetMapEntry>();
+        private Dictionary<string, (string guid, string assetName)> _assetMap = new Dictionary<string, (string guid, string assetName)>();// 処理用
+        
         [Serializable]
         public class AssetMapEntry
         {
             public string assetName;
             public string figmaNodeId;
             public string unityAssetGuid;
+        }
+
+        public void Initialize()
+        {
+            _assetMap.Clear();
+            foreach (var entry in assetEntryDataList)
+            {
+                if (!string.IsNullOrEmpty(entry.figmaNodeId))
+                {
+                    _assetMap[entry.figmaNodeId] = (entry.unityAssetGuid, entry.assetName);
+                }
+            }
+        }
+
+        public void FinalizeMap()
+        {
+            assetEntryDataList = _assetMap.Select(m => new AssetMapEntry
+            {
+                figmaNodeId = m.Key,
+                unityAssetGuid = m.Value.guid,
+                assetName = m.Value.assetName
+            }).ToList();
         }
         
         public string GetAssetPath(string nodeId)
@@ -27,25 +51,26 @@ namespace UnityFigmaBridge.Editor.Extension.ImportCache
         
         public string GetGuidByNodeId(string nodeId)
         {
-            return assetEntryDataList.FirstOrDefault(e => e.figmaNodeId == nodeId)?.unityAssetGuid;
+            if (_assetMap.TryGetValue(nodeId, out var value))
+            {
+                return value.guid;
+            }
+            return string.Empty;
         }
 
         public void Add(string nodeId, string guid, string assetName)
         {
-            var entry = assetEntryDataList.FirstOrDefault(e => e.figmaNodeId == nodeId);
-            if (entry == null)
+            if (!_assetMap.TryGetValue(nodeId, out var entryValue))
             {
-                assetEntryDataList.Add(new AssetMapEntry { figmaNodeId = nodeId, unityAssetGuid = guid, assetName = assetName });
+                _assetMap.Add(nodeId, (guid, assetName));
                 EditorUtility.SetDirty(this);
             }
-            else
+            
+            if (!guid.Equals(entryValue.guid) || !assetName.Equals(entryValue.assetName))
             {
-                if (!guid.Equals(entry.unityAssetGuid) || !assetName.Equals(entry.assetName))
-                {
-                    EditorUtility.SetDirty(this);
-                    entry.unityAssetGuid = guid;
-                    entry.assetName = assetName;
-                }
+                entryValue.guid = guid;
+                entryValue.assetName = assetName;
+                EditorUtility.SetDirty(this);
             }
         }
     }
