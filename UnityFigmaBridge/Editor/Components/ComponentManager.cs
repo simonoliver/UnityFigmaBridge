@@ -83,8 +83,7 @@ namespace UnityFigmaBridge.Editor.Components
                 // 元となるプレハブが存在する場合はバックアップを取る
                 var backupPath = FigmaPaths.MakeBackupPath(prefabAssetPath);
                 Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? string.Empty);
-                File.Copy(prefabAssetPath, backupPath, true);
-                AssetDatabase.Refresh();
+                AssetDatabase.CopyAsset(prefabAssetPath, backupPath);
             }
             
             var componentPrefab = PrefabUtility.SaveAsPrefabAssetAndConnect(nodeGameObject, prefabAssetPath, InteractionMode.UserAction);
@@ -391,9 +390,10 @@ namespace UnityFigmaBridge.Editor.Components
             foreach (var comp in targetComponents)
             {
                 Component deleteItem = null;
+                var type1 = comp.GetType();
+                
                 foreach (var comp2 in sourceComponents)
                 {
-                    var type1 = comp.GetType();
                     // 合致するコンポーネントがあったら、データをコピーして終了
                     if (type1 == comp2.GetType())
                     {
