@@ -424,6 +424,9 @@ namespace UnityFigmaBridge.Editor.Components
          /// </summary>
         private static void SyncChildren(GameObject source, GameObject target, Node node)
         {
+            // 対象かソースが無効なら
+            if(!target || !source)return;
+            
             // コンポーネントノードの場合は追加しない
             var componentNodeMarker = target.GetComponent<FigmaComponentNodeMarker>();
             if (componentNodeMarker)
@@ -435,7 +438,7 @@ namespace UnityFigmaBridge.Editor.Components
             {
                 var targetChild = target.transform.Find(sourceChild.name);
                 var nodeChildren = node.children;
-                var nodeChild = nodeChildren.FirstOrDefault(n => n.name == sourceChild.name);
+                var nodeChild = nodeChildren?.FirstOrDefault(n => n.name == sourceChild.name);
 
                 // Nodeデータに存在しない場合は削除されたものとして無視する
                 if (nodeChild == null)
