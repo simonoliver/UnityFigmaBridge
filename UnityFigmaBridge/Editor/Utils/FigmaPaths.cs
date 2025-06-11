@@ -42,7 +42,16 @@ namespace UnityFigmaBridge.Editor.Utils
         /// </summary>
         public static string FigmaFontsFolder = $"{FigmaAssetsRootFolder}/Fonts";
         
+        /// <summary>
+        /// 拡張で使用するフォルダ
+        /// </summary>
+        private static string FigmaCustomFolder = $"{FigmaAssetsRootFolder}/Custom";
         
+        /// <summary>
+        /// バックアップを取るのに使用するフォルダ
+        /// </summary>
+        private static string FigmaCustomBackupFolder = $"{FigmaCustomFolder}/Backup";
+
         public static string GetPathForImageFill(string imageId)
         {
             return $"{FigmaPaths.FigmaImageFillFolder}/{imageId}.png";
@@ -105,6 +114,12 @@ namespace UnityFigmaBridge.Editor.Utils
             string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
  
             return System.Text.RegularExpressions.Regex.Replace(name, invalidRegStr, "_");
+        }
+
+        // バックアップ用のパス生成
+        public static string MakeBackupPath(string sourceAssetPath)
+        {
+            return FigmaCustomBackupFolder + '/' + sourceAssetPath;
         }
 
         public static void CreateRequiredDirectories()
