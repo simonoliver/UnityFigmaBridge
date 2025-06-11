@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -10,6 +11,7 @@ using UnityFigmaBridge.Editor.Nodes;
 using UnityFigmaBridge.Editor.PrototypeFlow;
 using UnityFigmaBridge.Editor.Utils;
 using UnityFigmaBridge.Runtime.UI;
+using Component = UnityEngine.Component;
 using Object = UnityEngine.Object;
 
 namespace UnityFigmaBridge.Editor.Components
@@ -75,6 +77,14 @@ namespace UnityFigmaBridge.Editor.Components
             if (string.IsNullOrEmpty(prefabAssetPath))
             {
                 prefabAssetPath = FigmaPaths.GetPathForComponentPrefab(nodeName,componentCount);
+            }
+            else
+            {
+                // 元となるプレハブが存在する場合はバックアップを取る
+                var backupPath = FigmaPaths.MakeBackupPath(prefabAssetPath);
+                Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? string.Empty);
+                File.Copy(prefabAssetPath, backupPath, true);
+                AssetDatabase.Refresh();
             }
             
             var componentPrefab = PrefabUtility.SaveAsPrefabAssetAndConnect(nodeGameObject, prefabAssetPath, InteractionMode.UserAction);
@@ -199,6 +209,20 @@ namespace UnityFigmaBridge.Editor.Components
             // Save prefab and all changes
             try
             {
+                var backupPath = FigmaPaths.MakeBackupPath(assetPath);
+                var backupPrefab  = AssetDatabase.LoadAssetAtPath<GameObject>(backupPath);
+                if (backupPrefab)
+                {
+                    var figmaNodeComponent = prefabContents.GetComponent<FigmaNodeObject>();
+                    if (figmaNodeComponent)
+                    {
+                        var componentRootNode = figmaImportProcessData.NodeLookupDictionary[figmaNodeComponent.NodeId];
+                    
+                        SyncComponentsAndChildren(backupPrefab , prefabContents, componentRootNode);
+                    }
+                }
+                
+                
                 // We might have issue with nested elements so need try catch loop
                 // TODO - Check for recurisve nested components
                 PrefabUtility.SaveAsPrefabAsset(prefabContents, assetPath);
@@ -343,5 +367,105 @@ namespace UnityFigmaBridge.Editor.Components
                 }
             }
         }
+        
+        /// <summary>
+        /// コンポ―ネントと子を同期する
+        /// </summary>
+         private static void SyncComponentsAndChildren(GameObject source, GameObject target, Node node)
+        {
+            SyncComponents(source, target);
+            SyncChildren(source, target, node);
+        }
+        
+         /// <summary>
+         /// targetに存在しないコンポーネントを追加(マーカー系を除く)、
+         /// 既に存在するコンポーネントはデータをコピー(CopySerialized)する
+         /// </summary>
+        private static void SyncComponents(GameObject source, GameObject target)
+        {
+            List<Component> sourceComponents = new List<Component>(
+                source.GetComponents<Component>()
+                    .Where(c => !SkipCopyComponentTypes.Contains(c.GetType())));// コピー対象でないコンポーネントを除く
+            List<Component> targetComponents = new List<Component>(target.GetComponents<Component>());
+
+            foreach (var comp in targetComponents)
+            {
+                Component deleteItem = null;
+                foreach (var comp2 in sourceComponents)
+                {
+                    var type1 = comp.GetType();
+                    // 合致するコンポーネントがあったら、データをコピーして終了
+                    if (type1 == comp2.GetType())
+                    {
+                        deleteItem = comp2;
+                        EditorUtility.CopySerialized(comp2,comp);
+                        break;
+                    }
+                }
+
+                // 合致したものはリストから削除する
+                if (deleteItem != null)
+                {
+                    sourceComponents.Remove(deleteItem);
+                }
+            }
+            // 全て見た後に残っているものがあれば追加する
+            foreach (var comp2 in sourceComponents)
+            {
+                Type type = comp2.GetType();
+                var component = target.AddComponent(type);
+                EditorUtility.CopySerialized(comp2,component);
+            }
+        }
+        
+         /// <summary>
+         /// 存在しない子があれば追加
+         /// 存在していればコンポーネントのコピーを実施する
+         /// </summary>
+        private static void SyncChildren(GameObject source, GameObject target, Node node)
+        {
+            // コンポーネントノードの場合は追加しない
+            var componentNodeMarker = target.GetComponent<FigmaComponentNodeMarker>();
+            if (componentNodeMarker)
+            {
+                return;
+            }
+            
+            foreach (Transform sourceChild in source.transform)
+            {
+                var targetChild = target.transform.Find(sourceChild.name);
+                var nodeChildren = node.children;
+                var nodeChild = nodeChildren.FirstOrDefault(n => n.name == sourceChild.name);
+
+                // Nodeデータに存在しない場合は削除されたものとして無視する
+                if (nodeChild == null)
+                {
+                    continue;
+                }
+                if (targetChild == null)
+                {
+                    // 基本ここには来ないはず
+                    // 子が存在しなければコピーして追加
+                    var copied = Object.Instantiate(sourceChild.gameObject, target.transform, false);
+                    copied.name = sourceChild.name;
+                }
+                else
+                {
+                    // すでに同名の子があれば再帰的にマージ
+                    SyncComponents(sourceChild.gameObject, targetChild.gameObject);
+                    SyncChildren(sourceChild.gameObject, targetChild.gameObject, nodeChild);
+                }
+            }
+        }
+
+        /// <summary>
+        /// コンポーネントコピー時に除外するタイプ (マーカー系のコンポーネントが主)
+        /// </summary>
+        private static readonly HashSet<Type> SkipCopyComponentTypes = new HashSet<Type>()
+        {
+            typeof(FigmaNodeObject),
+            typeof(FigmaComponentNodeMarker),
+            typeof(InstanceSwapMarker),
+        };
     }
 }
