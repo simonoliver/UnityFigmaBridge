@@ -81,10 +81,13 @@ namespace UnityFigmaBridge.Editor.Components
             else
             {
                 // 元となるプレハブが存在する場合はバックアップを取る
-                var backupPath = FigmaPaths.MakeBackupPath(prefabAssetPath);
-                Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? string.Empty);
-                AssetDatabase.DeleteAsset(backupPath);
-                AssetDatabase.CopyAsset(prefabAssetPath, backupPath);
+                if (File.Exists(prefabAssetPath))
+                {
+                    var backupPath = FigmaPaths.MakeBackupPath(prefabAssetPath);
+                    Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? string.Empty);
+                    AssetDatabase.DeleteAsset(backupPath);
+                    AssetDatabase.CopyAsset(prefabAssetPath, backupPath);
+                }
             }
             
             var componentPrefab = PrefabUtility.SaveAsPrefabAssetAndConnect(nodeGameObject, prefabAssetPath, InteractionMode.UserAction);
