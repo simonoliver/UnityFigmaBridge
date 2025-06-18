@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityFigmaBridge.Editor.Extension.ImportCache;
 using UnityFigmaBridge.Editor.Settings;
 using UnityFigmaBridge.Editor.Utils;
 
@@ -251,13 +252,14 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <returns></returns>
         public static List<FigmaDownloadQueueItem> GenerateDownloadQueue(FigmaImageFillData imageFillData,List<string> foundImageFills,List<FigmaServerRenderData> serverRenderData,List<ServerRenderNodeData> serverRenderNodes)
         {
+            var map = FigmaAssetGuidMapManager.GetMap(FigmaAssetGuidMapManager.AssetType.ImageFill);
             // Check if each image fill file has already been downloaded. If not, add to download list
             //Dictionary<string, string> filteredImageFillList = new Dictionary<string, string>();
             List<FigmaDownloadQueueItem> downloadList = new List<FigmaDownloadQueueItem>();
             foreach (var keyPair in imageFillData.meta.images)
             {
                 // Only download if it is used in the document and not already downloaded
-                if (foundImageFills.Contains(keyPair.Key) && !File.Exists(FigmaPaths.GetPathForImageFill(keyPair.Key)))
+                if (foundImageFills.Contains(keyPair.Key) && !map.AssetExists(keyPair.Key))
                 {
                     downloadList.Add(new FigmaDownloadQueueItem
                     {
@@ -303,13 +305,22 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         {
             var downloadCount = downloadItems.Count;
             var downloadIndex = 0;
-            
+
+            var map = FigmaAssetGuidMapManager.GetMap(FigmaAssetGuidMapManager.AssetType.ImageFill);
             // Cycle through each required image and download
             foreach (var downloadItem in downloadItems)
             {
                 EditorUtility.DisplayProgressBar("Importing Figma Document", $"Downloading Server Image {downloadIndex}/{downloadCount}", (float)downloadIndex/(float) downloadCount);
+
+                var mapKey = Path.GetFileNameWithoutExtension(downloadItem.FilePath);
+                var mapFilePath = map.GetAssetPath(mapKey);
+                var filePath = mapFilePath == string.Empty ? downloadItem.FilePath : mapFilePath;
                 try
                 {
+                    var key = mapKey;
+                    var guid = AssetDatabase.AssetPathToGUID(filePath);
+                    map.Add(key, guid, filePath);
+                    
                     // Download and write the image data
                     var imageDownloadWebRequest = UnityWebRequest.Get(downloadItem.Url);
                     await imageDownloadWebRequest.SendWebRequest();
@@ -317,17 +328,17 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                     byte[] imageBytes = imageDownloadWebRequest.downloadHandler.data;
                     
                     // Create the directory if needed
-                    var directoryPath= Path.GetDirectoryName(downloadItem.FilePath);
+                    var directoryPath= Path.GetDirectoryName(filePath) ?? string.Empty;
                     if (!Directory.Exists(directoryPath)) Directory.CreateDirectory(directoryPath);
                     
-                    File.WriteAllBytes(downloadItem.FilePath,imageBytes);
+                    File.WriteAllBytes(filePath,imageBytes);
                     
                     // Refresh the asset database to ensure the asset has been created
-                    AssetDatabase.ImportAsset(downloadItem.FilePath);
+                    AssetDatabase.ImportAsset(filePath);
                     AssetDatabase.Refresh();
                     
                     // Set the properties for the texture, to mark as a sprite and with alpha transparency and no compression
-                    TextureImporter textureImporter = (TextureImporter) AssetImporter.GetAtPath(downloadItem.FilePath);
+                    TextureImporter textureImporter = (TextureImporter) AssetImporter.GetAtPath(filePath);
                     textureImporter.textureType = TextureImporterType.Sprite;
                     textureImporter.alphaIsTransparency = true;
                     textureImporter.mipmapEnabled = true; // We'll enable mip maps to stop issues at lower resolutions
@@ -354,7 +365,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"Error downloading image file '{downloadItem.Url}' of type {downloadItem.FileType} for path {downloadItem.FilePath}: {e.ToString()}");
+                    Debug.LogWarning($"Error downloading image file '{downloadItem.Url}' of type {downloadItem.FileType} for path {filePath}: {e.ToString()}");
                 }
                 downloadIndex++;
             }

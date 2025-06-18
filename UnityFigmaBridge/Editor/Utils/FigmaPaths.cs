@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityFigmaBridge.Editor.Extension.ImportCache;
 using UnityFigmaBridge.Editor.FigmaApi;
 
 namespace UnityFigmaBridge.Editor.Utils
@@ -52,9 +53,32 @@ namespace UnityFigmaBridge.Editor.Utils
         /// </summary>
         private static string FigmaCustomBackupFolder = $"{FigmaCustomFolder}/Backup";
 
+        
+        /// <summary>
+        /// ImageFillのIDとGUIDを結びつけるデータ
+        /// </summary>
+        private static FigmaAssetGuidMapData imageAssetGuidMapData;
+        private static FigmaAssetGuidMapData ImageAssetGuidMapData
+        {
+            get
+            {
+                if (imageAssetGuidMapData == null)
+                {
+                    imageAssetGuidMapData =
+                        FigmaAssetGuidMapManager.GetMap(FigmaAssetGuidMapManager.AssetType.ImageFill);
+                }
+
+                return imageAssetGuidMapData;
+            }
+        }
         public static string GetPathForImageFill(string imageId)
         {
-            return $"{FigmaPaths.FigmaImageFillFolder}/{imageId}.png";
+            var mapFilePath = ImageAssetGuidMapData?.GetAssetPath(imageId);
+            if (string.IsNullOrEmpty(mapFilePath))
+            {
+                return $"{FigmaPaths.FigmaImageFillFolder}/{imageId}.png";
+            }
+            return mapFilePath;
         }
         
         public static string GetPathForServerRenderedImage(string nodeId,
@@ -64,11 +88,24 @@ namespace UnityFigmaBridge.Editor.Utils
             switch (matchingEntry.RenderType)
             {
                 case ServerRenderType.Export:
+                {
+                    var mapFilePath = ImageAssetGuidMapData?.GetAssetPath(matchingEntry.SourceNode.name);
+                    if (!string.IsNullOrEmpty(mapFilePath))
+                    {
+                        return mapFilePath;
+                    }
                     return $"Assets/{matchingEntry.SourceNode.name}.png";
+                }
                 default:
+                {
+                    var mapFilePath = ImageAssetGuidMapData?.GetAssetPath(nodeId);
+                    if (!string.IsNullOrEmpty(mapFilePath))
+                    {
+                        return mapFilePath;
+                    }
                     var safeNodeId = FigmaDataUtils.ReplaceUnsafeFileCharactersForNodeId(nodeId);
                     return $"{FigmaPaths.FigmaServerRenderedImagesFolder}/{safeNodeId}.png";
-                   
+                }
             }
         }
 

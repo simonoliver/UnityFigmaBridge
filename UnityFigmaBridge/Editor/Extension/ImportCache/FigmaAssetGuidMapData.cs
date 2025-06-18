@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -41,6 +42,23 @@ namespace UnityFigmaBridge.Editor.Extension.ImportCache
                 assetName = m.Value.assetName
             }).ToList();
         }
+
+        public bool AssetExists(string key)
+        {
+            var assetPath = GetAssetPath(key);
+            if (assetPath == string.Empty)
+            {
+                return false;
+            }
+            bool fileExists = File.Exists(assetPath);
+            // 存在しない場合はパスをリセットする
+            if (!fileExists)
+            {
+                _assetMap.Remove(key);
+            }
+            
+            return fileExists;
+        }
         
         public string GetAssetPath(string nodeId)
         {
@@ -72,6 +90,11 @@ namespace UnityFigmaBridge.Editor.Extension.ImportCache
                 entryValue.assetName = assetName;
                 EditorUtility.SetDirty(this);
             }
+        }
+
+        public void SetDirty()
+        {
+            EditorUtility.SetDirty(this);
         }
     }
 }

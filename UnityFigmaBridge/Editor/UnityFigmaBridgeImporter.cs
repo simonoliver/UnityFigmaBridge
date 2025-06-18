@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityFigmaBridge.Editor.Extension.ImportCache;
 using UnityFigmaBridge.Editor.FigmaApi;
 using UnityFigmaBridge.Editor.Fonts;
 using UnityFigmaBridge.Editor.Nodes;
@@ -109,8 +110,12 @@ namespace UnityFigmaBridge.Editor
                 pageNodeList = pageNodeList.Where(p => enabledPageIdList.Contains(p.id)).ToList();
             }
 
+            // 画像キャッシュここで構築しておく
+            FigmaAssetGuidMapManager.CreateMap(FigmaAssetGuidMapManager.AssetType.ImageFill);
+            
             await ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodeList);
             
+            FigmaAssetGuidMapManager.SaveAllMap();
         }
 
         /// <summary>
