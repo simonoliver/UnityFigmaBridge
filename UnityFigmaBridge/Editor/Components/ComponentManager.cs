@@ -402,7 +402,7 @@ namespace UnityFigmaBridge.Editor.Components
                     if (type1 == comp2.GetType())
                     {
                         deleteItem = comp2;
-                        EditorUtility.CopySerialized(comp2,comp);
+                        CopyComponent(comp2,comp);
                         break;
                     }
                 }
@@ -418,8 +418,26 @@ namespace UnityFigmaBridge.Editor.Components
             {
                 Type type = comp2.GetType();
                 var component = target.AddComponent(type);
-                EditorUtility.CopySerialized(comp2,component);
+                CopyComponent(comp2,component);
             }
+        }
+
+         /// <summary>
+         /// コンポーネントのコピー処理
+         /// 基本 EditorUtility.CopySerialized を利用
+         /// 例外はこの関数内で定義
+         /// </summary>
+        private static void CopyComponent(Component source, Component target)
+        {
+            // imageの場合、画像は最新のものに更新する
+            if (target is Image img)
+            {
+                var sprite = img.sprite;
+                EditorUtility.CopySerialized(source,target);
+                img.sprite = sprite;
+                return;
+            }
+            EditorUtility.CopySerialized(source,target);
         }
         
          /// <summary>
