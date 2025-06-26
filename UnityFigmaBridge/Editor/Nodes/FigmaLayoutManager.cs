@@ -82,6 +82,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             {
                 case Node.LayoutMode.VERTICAL:
                     layoutGroup= UnityUiUtils.GetOrAddComponent<VerticalLayoutGroup>(targetLayoutObject);
+                    layoutGroup.childAlignment = TextAnchor.MiddleCenter;// 初期値設定
                     layoutGroup.childForceExpandWidth= layoutGroup.childForceExpandHeight = false;
                     // Setup alignment according to Figma layout. Primary is Vertical
                     switch (node.primaryAxisAlignItems)
@@ -125,6 +126,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                     layoutGroup= UnityUiUtils.GetOrAddComponent<HorizontalLayoutGroup>(targetLayoutObject);
                     layoutGroup.childForceExpandWidth= layoutGroup.childForceExpandHeight = false;
                     // Setup alignment according to Figma layout. Primary is Horizontal
+                    layoutGroup.childAlignment = TextAnchor.MiddleCenter;// 初期値設定
                     layoutGroup.childAlignment = node.primaryAxisAlignItems switch
                     {
                         // Left Alignment
@@ -160,7 +162,6 @@ namespace UnityFigmaBridge.Editor.Nodes
             layoutGroup.childControlWidth = true;
             layoutGroup.childForceExpandHeight = false;
             layoutGroup.childForceExpandWidth = false;
-            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
 
             layoutGroup.padding = new RectOffset(Mathf.RoundToInt(node.paddingLeft), Mathf.RoundToInt(node.paddingRight),
                 Mathf.RoundToInt(node.paddingTop), Mathf.RoundToInt(node.paddingBottom));
