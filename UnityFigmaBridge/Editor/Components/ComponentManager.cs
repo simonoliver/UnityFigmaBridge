@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -491,6 +492,11 @@ namespace UnityFigmaBridge.Editor.Components
             typeof(FigmaNodeObject),
             typeof(FigmaComponentNodeMarker),
             typeof(InstanceSwapMarker),
+            
+            // 以下は常にFigmaの設定の方が正なので上書きしない
+            typeof(TMP_Text),
+            typeof(LayoutElement),
+            typeof(LayoutGroup),
         };
     }
 }
