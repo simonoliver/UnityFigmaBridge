@@ -37,6 +37,8 @@ namespace UnityFigmaBridge.Editor.Settings
         [Tooltip("If false, the generator will not attempt to build any nodes marked for export")]
         public bool GenerateNodesMarkedForExport = true;
         
+        [Tooltip("Pageプレハブを保存するかどうか")]
+        public bool SaveFigmaPageAsPrefab = true;
         [Tooltip("If true, download only selected pages and screens")]
         public bool OnlyImportSelectedPages = false;
 
@@ -48,6 +50,14 @@ namespace UnityFigmaBridge.Editor.Settings
             {
                 var (isValid, fileId) = FigmaApiUtils.GetFigmaDocumentIdFromUrl(DocumentUrl);
                 return isValid ? fileId : "";
+            }
+        }
+
+        public List<string> ImportSelectPageIdList
+        {
+            get
+            {
+                return PageDataList.Where(data => data.Selected).Select(data => data.NodeId).ToList();
             }
         }
         

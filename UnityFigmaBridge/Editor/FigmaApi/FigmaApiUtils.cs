@@ -217,8 +217,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         {
             FigmaFileNodes fileNodes;
             var externalComponentsJoined = string.Join(",",nodeIds);
-            var componentsUrl = $"https://api.figma.com/v1/files/{fileId}/nodes/?ids={externalComponentsJoined}";
-            
+            var componentsUrl = $"https://api.figma.com/v1/files/{fileId}/nodes/?ids={externalComponentsJoined}&geometry=paths";
             // Download the FIGMA Document
             var webRequest = UnityWebRequest.Get(componentsUrl);
             webRequest.SetRequestHeader("X-Figma-Token",accessToken);
@@ -230,8 +229,16 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             }
             try
             {
-                fileNodes = JsonConvert.DeserializeObject<FigmaFileNodes>(webRequest.downloadHandler.text);
-                File.WriteAllText("ComponentNodes.json", webRequest.downloadHandler.text);
+                JsonSerializerSettings settings = new JsonSerializerSettings()
+                {
+                    DefaultValueHandling = DefaultValueHandling.Include,
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    NullValueHandling = NullValueHandling.Ignore,
+                };
+                
+                // Deserialize the document
+                fileNodes = JsonConvert.DeserializeObject<FigmaFileNodes>(webRequest.downloadHandler.text, settings);
+                // File.WriteAllText("ComponentNodes.json", webRequest.downloadHandler.text);
             }
             catch (Exception e)
             {

@@ -5,7 +5,6 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityFigmaBridge.Editor.Components;
-using UnityFigmaBridge.Editor.Extension.ImportCache;
 using UnityFigmaBridge.Editor.FigmaApi;
 using UnityFigmaBridge.Editor.PrototypeFlow;
 using UnityFigmaBridge.Editor.Utils;
@@ -24,7 +23,8 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// </summary>
         /// <param name="rootCanvas">Root canvas for generation</param>
         /// <param name="figmaImportProcessData"></param>
-        public static void BuildFigmaFile(Canvas rootCanvas, FigmaImportProcessData figmaImportProcessData)
+        /// <param name="saveFigmaPageAsPrefab"></param>
+        public static void BuildFigmaFile(Canvas rootCanvas, FigmaImportProcessData figmaImportProcessData, bool saveFigmaPageAsPrefab)
         {
             // Save prefab for each page
             var downloadPageIdList = figmaImportProcessData.SelectedPagesForImport.Select(p => p.id).ToList();
@@ -39,13 +39,18 @@ namespace UnityFigmaBridge.Editor.Nodes
                 createdPages.Add((figmaCanvasNode,pageGameObject));
             }
             
-            // Save prefab for each page
-            for (var i = 0; i < createdPages.Count; i++)
+            // 保存する場合だけ保存
+            if (saveFigmaPageAsPrefab)
             {
-                if (!downloadPageIdList.Contains(createdPages[i].Item1.id)) continue;
-               SaveFigmaPageAsPrefab(createdPages[i].Item1, createdPages[i].Item2,figmaImportProcessData);
+                // Save prefab for each page
+                for (var i = 0; i < createdPages.Count; i++)
+            // ページを保存する場合
+                {
+                    // if (!downloadPageIdList.Contains(createdPages[i].Item1.id)) continue;
+                    SaveFigmaPageAsPrefab(createdPages[i].Item1, createdPages[i].Item2, figmaImportProcessData);
+                }
             }
-            
+
             // Destroy all page objects
             foreach (var createdPage in createdPages)
             {
