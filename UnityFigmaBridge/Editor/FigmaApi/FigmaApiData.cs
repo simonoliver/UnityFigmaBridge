@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityFigmaBridge.Editor.FigmaApi
 {
@@ -75,6 +76,23 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public string thumbnailUrl;
         public string version;
         public string owner;
+
+        public List<string> GetComponentIds()
+        {
+            if (components == null || components.Count == 0) return new List<string>();
+            
+            var result = new HashSet<string>();
+            foreach (var keyValue in components)
+            {
+                // コンポーネントセットがあればそっちも追加
+                if (keyValue.Value.componentSetId != null)
+                {
+                    result.Add(keyValue.Value.componentSetId);
+                }
+                result.Add(keyValue.Key);
+            }
+            return result.ToList();
+        }
     }
 
     /// <summary>
@@ -90,6 +108,61 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public string thumbnailUrl;
         public string err;
         public Dictionary<string,FigmaFile> nodes;
+        
+        
+        /// <summary>
+        /// 単一のFigmaFileを作成
+        /// </summary>
+        /// <returns></returns>
+        public FigmaFile CreateFigmaFile()
+        {
+            var figmaFile = new FigmaFile();
+            var document = new Node();
+            document.id = "0:0";
+            document.name = "Document";
+            document.type = NodeType.DOCUMENT;
+            document.children = GetAllFileNodeData();
+            figmaFile.document = document;
+            figmaFile.components = GetComponents();
+            
+            return figmaFile;
+        }
+        
+        /// <summary>
+        /// コンポーネントまとめとくページノードの作成
+        /// </summary>
+        /// <returns></returns>
+        public Node CreateFigmaComponentPageNode()
+        {
+            var pageNode = new Node();
+            pageNode.id = "cmpPage";
+            pageNode.name = "ComponentPage";
+            pageNode.type = NodeType.CANVAS;
+            pageNode.children = GetAllFileNodeData();
+
+            return pageNode;
+        }
+        
+        
+        private Node[] GetAllFileNodeData()
+        {
+            return nodes.Values.Select(file => file.document).ToArray();
+        }
+        
+        private Dictionary<string,Component> GetComponents()
+        {
+            var mergedComponents = new Dictionary<string, Component>();
+
+            foreach (var components in nodes.Values.Select(file => file.components))
+            {
+                foreach (var kvp in components)
+                {
+                    mergedComponents[kvp.Key] = kvp.Value; // 同じキーがあれば上書き
+                }
+            }
+
+            return mergedComponents;
+        }
     }
     
     public class Node
@@ -1054,6 +1127,11 @@ A map of OpenType feature flags to 1 or 0, 1 if it is enabled and 0 if it is dis
         /// The description of the component as entered in the editor
         /// </summary>
         public string description;
+        
+        /// <summary>
+        /// コンポーネントセットID　なければ null
+        /// </summary>
+        public string componentSetId;
     }
 
     /// <summary>

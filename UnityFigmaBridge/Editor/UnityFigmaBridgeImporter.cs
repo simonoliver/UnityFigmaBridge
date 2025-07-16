@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -70,46 +69,71 @@ namespace UnityFigmaBridge.Editor
         {
             var requirementsMet = CheckRequirements();
             if (!requirementsMet) return;
-
-            var figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
-            if (figmaFile == null) return;
-
-            var pageNodeList = FigmaDataUtils.GetPageNodes(figmaFile);
-
+            
+            FigmaFile figmaFile;
+            List<Node> pageNodeList;
             if (s_UnityFigmaBridgeSettings.OnlyImportSelectedPages)
             {
-                var downloadPageNodeIdList = pageNodeList.Select(p => p.id).ToList();
-                downloadPageNodeIdList.Sort();
+                // node指定でページを取得
+                var basePageFile = await DownloadFigmaNodesDocument(s_UnityFigmaBridgeSettings.FileId, s_UnityFigmaBridgeSettings.ImportSelectPageIdList);
+                if (basePageFile == null) return;
 
-                var settingsPageDataIdList = s_UnityFigmaBridgeSettings.PageDataList.Select(p => p.NodeId).ToList();
-                settingsPageDataIdList.Sort();
-
-                if (!settingsPageDataIdList.SequenceEqual(downloadPageNodeIdList))
+                figmaFile = basePageFile.CreateFigmaFile();
+                pageNodeList = FigmaDataUtils.GetPageNodes(figmaFile);
+                
+                // var downloadPageNodeIdList = pageNodeList.Select(p => p.id).ToList();
+                // downloadPageNodeIdList.Sort();
+                //
+                // var settingsPageDataIdList = s_UnityFigmaBridgeSettings.PageDataList.Select(p => p.NodeId).ToList();
+                // settingsPageDataIdList.Sort();
+                //
+                // if (!settingsPageDataIdList.SequenceEqual(downloadPageNodeIdList))
+                // {
+                //     ReportError("The pages found in the Figma document have changed - check your settings file and Sync again when ready", "");
+                //     
+                //     // Apply the new page list to serialized data and select to allow the user to change
+                //     s_UnityFigmaBridgeSettings.RefreshForUpdatedPages(figmaFile);
+                //     Selection.activeObject = s_UnityFigmaBridgeSettings;
+                //     EditorUtility.SetDirty(s_UnityFigmaBridgeSettings);
+                //     AssetDatabase.SaveAssetIfDirty(s_UnityFigmaBridgeSettings);
+                //     AssetDatabase.Refresh();
+                //     
+                //     return;
+                // }
+                
+                // 構成のチェックを通した上で、コンポーネント用のページを生成
+                var componentIds = figmaFile.GetComponentIds();
+                // node指定でコンポーネント取得
+                var componentPageFile = await DownloadFigmaNodesDocument(s_UnityFigmaBridgeSettings.FileId, componentIds);
+                if (componentPageFile != null)
                 {
-                    ReportError("The pages found in the Figma document have changed - check your settings file and Sync again when ready", "");
-                    
-                    // Apply the new page list to serialized data and select to allow the user to change
-                    s_UnityFigmaBridgeSettings.RefreshForUpdatedPages(figmaFile);
-                    Selection.activeObject = s_UnityFigmaBridgeSettings;
-                    EditorUtility.SetDirty(s_UnityFigmaBridgeSettings);
-                    AssetDatabase.SaveAssetIfDirty(s_UnityFigmaBridgeSettings);
-                    AssetDatabase.Refresh();
-                    
-                    return;
+                    var pages = figmaFile.document.children;
+                    int len = pages.Length;
+                    Node[] newPages = new Node[len + 1];
+                    Array.Copy(pages, newPages, len);
+                    newPages[len] = componentPageFile.CreateFigmaComponentPageNode();
+                    figmaFile.document.children = newPages;
                 }
                 
+                
                 var enabledPageIdList = s_UnityFigmaBridgeSettings.PageDataList.Where(p => p.Selected).Select(p => p.NodeId).ToList();
-
+                
                 if (enabledPageIdList.Count <= 0)
                 {
                     ReportError("'Import Selected Pages' is selected, but no pages are selected for import", "");
                     SelectSettings();
                     return;
                 }
-
+                
                 pageNodeList = pageNodeList.Where(p => enabledPageIdList.Contains(p.id)).ToList();
             }
-
+            else
+            {
+                figmaFile = await DownloadFigmaDocument(s_UnityFigmaBridgeSettings.FileId);
+                if (figmaFile == null) return;
+                pageNodeList = FigmaDataUtils.GetPageNodes(figmaFile);
+            }
+            
             // 画像キャッシュここで構築しておく
             FigmaAssetGuidMapManager.CreateMap(FigmaAssetGuidMapManager.AssetType.ImageFill);
             
@@ -323,10 +347,32 @@ namespace UnityFigmaBridge.Editor
             }
             return null;
         }
+        
+        public static async Task<FigmaFileNodes> DownloadFigmaNodesDocument(string fileId, List<string> nodeId)
+        {
+            // Download figma document
+            EditorUtility.DisplayProgressBar(PROGRESS_BOX_TITLE, $"Downloading file (Nodes)", 0);
+            try
+            {
+                var figmaTask = FigmaApiUtils.GetFigmaFileNodes(fileId, s_PersonalAccessToken, nodeId);
+                await figmaTask;
+                return figmaTask.Result;
+            }
+            catch (Exception e)
+            {
+                ReportError(
+                    "Error downloading Figma Component node",
+                    e.ToString());
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+            return null;
+        }
 
         private static async Task ImportDocument(string fileId, FigmaFile figmaFile, List<Node> downloadPageNodeList)
         {
-
             // Build a list of page IDs to download
             var downloadPageIdList = downloadPageNodeList.Select(p => p.id).ToList();
             
@@ -337,6 +383,8 @@ namespace UnityFigmaBridge.Editor
             // Next build a list of all externally referenced components not included in the document (eg
             // from external libraries) and download
             var externalComponentList = FigmaDataUtils.FindMissingComponentDefinitions(figmaFile);
+            
+            
             
             // TODO - Implement external components
             // This is currently not working as only returns a depth of 1 of returned nodes. Need to get original files too
@@ -397,7 +445,7 @@ namespace UnityFigmaBridge.Editor
                     }
                 }
             }
-
+            
             // Make sure that existing downloaded assets are in the correct format
             FigmaApiUtils.CheckExistingAssetProperties();
             
@@ -427,14 +475,12 @@ namespace UnityFigmaBridge.Editor
             // Download all required files
             await FigmaApiUtils.DownloadFiles(downloadList, s_UnityFigmaBridgeSettings);
             
-
             // Generate font mapping data
             var figmaFontMapTask = FontManager.GenerateFontMapForDocument(figmaFile,
                 s_UnityFigmaBridgeSettings.EnableGoogleFontsDownloads);
             await figmaFontMapTask;
             var fontMap = figmaFontMapTask.Result;
-
-
+            
             var componentData = new FigmaBridgeComponentData
             { 
                 MissingComponentDefinitionsList = externalComponentList, 
@@ -468,7 +514,7 @@ namespace UnityFigmaBridge.Editor
 
             try
             {
-                FigmaAssetGenerator.BuildFigmaFile(s_SceneCanvas, figmaBridgeProcessData);
+                FigmaAssetGenerator.BuildFigmaFile(s_SceneCanvas, figmaBridgeProcessData, s_UnityFigmaBridgeSettings.SaveFigmaPageAsPrefab);
             }
             catch (Exception e)
             {
@@ -477,7 +523,6 @@ namespace UnityFigmaBridge.Editor
                 CleanUpPostGeneration();
                 return;
             }
-           
             
             // Lastly, for prototype mode, instantiate the default flowScreen and set the scaler up appropriately
             if (s_UnityFigmaBridgeSettings.BuildPrototypeFlow)
