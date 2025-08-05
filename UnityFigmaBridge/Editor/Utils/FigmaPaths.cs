@@ -71,12 +71,12 @@ namespace UnityFigmaBridge.Editor.Utils
                 return imageAssetGuidMapData;
             }
         }
-        public static string GetPathForImageFill(string imageId)
+        public static string GetPathForImageFill(string imageId, string imageName)
         {
             var mapFilePath = ImageAssetGuidMapData?.GetAssetPath(imageId);
             if (string.IsNullOrEmpty(mapFilePath))
             {
-                return $"{FigmaPaths.FigmaImageFillFolder}/{imageId}.png";
+                return $"{FigmaPaths.FigmaImageFillFolder}/{imageName}.png";
             }
             return mapFilePath;
         }

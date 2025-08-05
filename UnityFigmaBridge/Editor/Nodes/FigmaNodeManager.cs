@@ -3,6 +3,7 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityFigmaBridge.Editor.Extension.ImportCache;
 using UnityFigmaBridge.Editor.FigmaApi;
 using UnityFigmaBridge.Editor.Fonts;
 using UnityFigmaBridge.Editor.Utils;
@@ -41,7 +42,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                         var image = nodeGameObject.GetComponent<Image>();
                         if (image == null) image = nodeGameObject.AddComponent<Image>();
                         var firstFill = node.fills[0];
-                        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(FigmaPaths.GetPathForImageFill(firstFill.imageRef));
+                        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(FigmaPaths.GetPathForImageFill(firstFill.imageRef, ImportSessionCache.imageNameMap[firstFill.imageRef]));
                         image.sprite = sprite;
                         image.type = Image.Type.Sliced;
 
@@ -298,7 +299,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                 switch (firstFill.type)
                 {
                     case Paint.PaintType.IMAGE:
-                        SetupImageFill(figmaImage, firstFill);
+                       SetupImageFill(figmaImage, firstFill);
                         break;
                     case Paint.PaintType.GRADIENT_LINEAR:
                     case Paint.PaintType.GRADIENT_RADIAL:
@@ -355,8 +356,12 @@ namespace UnityFigmaBridge.Editor.Nodes
         private static void SetupImageFill(FigmaImage figmaImage,Paint fill)
         {
             // Assign image fill, load from asset database
+            if (!ImportSessionCache.imageNameMap.TryGetValue(fill.imageRef, out var value))
+            {
+                return;
+            }
             figmaImage.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(
-                    FigmaPaths.GetPathForImageFill(fill.imageRef));
+                    FigmaPaths.GetPathForImageFill(fill.imageRef, value));
 
             switch (fill.scaleMode)
             {
@@ -501,7 +506,7 @@ namespace UnityFigmaBridge.Editor.Nodes
 
             Vector4 borders = new Vector4(left, bottom, right, top);
             
-            var imagePath = FigmaPaths.GetPathForImageFill(fill.imageRef);
+            var imagePath = FigmaPaths.GetPathForImageFill(fill.imageRef, ImportSessionCache.imageNameMap[fill.imageRef]);
             var importer = (TextureImporter)AssetImporter.GetAtPath(imagePath);
 			if (importer == null)
             {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
+using UnityFigmaBridge.Editor.Extension.ImportCache;
 using static UnityFigmaBridge.Editor.Utils.NameCheckUtils;
 
 namespace UnityFigmaBridge.Editor.FigmaApi
@@ -207,15 +207,16 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <param name="file"></param>
         /// <param name="downloadPageIdList"></param>
         /// <returns></returns>
-        public static List<string> GetAllImageFillIdsFromFile(FigmaFile file, List<string> downloadPageIdList)
+        public static Dictionary<string, string> GetAllImageFillIdsFromFile(FigmaFile file, List<string> downloadPageIdList)
         {
-            var imageFillIdList = new List<string>();
+            // var imageFillIdList = new Dictionary<string, string>();
+            var imageFillMap = ImportSessionCache.imageNameMap;
             foreach (var page in file.document.children)
             {
                 var includedPage=downloadPageIdList.Contains(page.id);
-                GetAllImageFillIdsForNode(page, imageFillIdList,0,includedPage,false);
+                GetAllImageFillIdsForNode(page, imageFillMap,0,includedPage,false);
             }
-            return imageFillIdList;
+            return imageFillMap;
         }
 
         /// <summary>
@@ -226,7 +227,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <param name="recursiveDepth"></param>
         /// <param name="includedPage"></param>
         /// <param name="withinComponentDefinition"></param>
-        private static void GetAllImageFillIdsForNode(Node node, List<string> imageFillList,int recursiveDepth,
+        private static void GetAllImageFillIdsForNode(Node node, Dictionary<string, string> imageFillList,int recursiveDepth,
             bool includedPage, bool withinComponentDefinition )
         {
             // ダミー要素の場合は自身も、子も不要なので戻る
@@ -235,15 +236,26 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             // We want to ignore random images placed on the root not in frames as they might be simple reference images
             var ignoreNodeFill = recursiveDepth <=1 && node.type != NodeType.FRAME && node.type != NodeType.COMPONENT;
             // We'll also ignore if this page is not included in the download list and we're not within a component definition
+            // ダウンロード対象外かつコンポーネントリソースでない
             if (!includedPage && !withinComponentDefinition) ignoreNodeFill = true;
             if (node.fills != null && !ignoreNodeFill)
             {
+                var imageNameCountMap = ImportSessionCache.imageNameCountMap;
                 foreach (var fill in node.fills)
                 {
                     if (fill == null || fill.type != Paint.PaintType.IMAGE) continue;
                     if (string.IsNullOrEmpty(fill.imageRef)) continue;
                     var imageRefId = fill.imageRef;
-                    if (!imageFillList.Contains(imageRefId)) imageFillList.Add(imageRefId);
+                    if (!imageFillList.ContainsKey(imageRefId))
+                    {
+                        var imageName = node.name;
+                        if (!imageNameCountMap.TryAdd(node.name, 1))
+                        {
+                            var count = ++imageNameCountMap[node.name];
+                            imageName += $"_{count}";
+                        }
+                        imageFillList.Add(imageRefId, imageName);
+                    }
                 }
             }
 
@@ -260,6 +272,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 GetAllImageFillIdsForNode(childNode, imageFillList,recursiveDepth+1,includedPage,withinComponentDefinition);
             
         }
+        
         
         /// <summary>
         /// Recursively search for nodes of a specific type

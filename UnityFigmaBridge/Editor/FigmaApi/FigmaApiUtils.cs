@@ -257,7 +257,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <param name="serverRenderData"></param>
         /// <param name="serverRenderNodes"></param>
         /// <returns></returns>
-        public static List<FigmaDownloadQueueItem> GenerateDownloadQueue(FigmaImageFillData imageFillData,List<string> foundImageFills,List<FigmaServerRenderData> serverRenderData,List<ServerRenderNodeData> serverRenderNodes)
+        public static List<FigmaDownloadQueueItem> GenerateDownloadQueue(FigmaImageFillData imageFillData,Dictionary<string, string> foundImageFills,List<FigmaServerRenderData> serverRenderData,List<ServerRenderNodeData> serverRenderNodes)
         {
             var map = FigmaAssetGuidMapManager.GetMap(FigmaAssetGuidMapManager.AssetType.ImageFill);
             // Check if each image fill file has already been downloaded. If not, add to download list
@@ -266,12 +266,12 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             foreach (var keyPair in imageFillData.meta.images)
             {
                 // Only download if it is used in the document and not already downloaded
-                if (foundImageFills.Contains(keyPair.Key) && !map.AssetExists(keyPair.Key))
+                if (foundImageFills.ContainsKey(keyPair.Key) && !map.AssetExists(keyPair.Key))
                 {
                     downloadList.Add(new FigmaDownloadQueueItem
                     {
                         Url=keyPair.Value,
-                        FilePath = FigmaPaths.GetPathForImageFill(keyPair.Key),
+                        FilePath = FigmaPaths.GetPathForImageFill(keyPair.Key, foundImageFills[keyPair.Key]),
                         FileType = FigmaDownloadQueueItem.FigmaFileType.ImageFill
                     });
                 }

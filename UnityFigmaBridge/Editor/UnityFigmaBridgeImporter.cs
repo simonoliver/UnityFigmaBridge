@@ -67,6 +67,8 @@ namespace UnityFigmaBridge.Editor
         
         private static async void SyncAsync()
         {
+            ImportSessionCache.CacheClear();//キャッシュの削除
+            
             var requirementsMet = CheckRequirements();
             if (!requirementsMet) return;
             
@@ -140,6 +142,7 @@ namespace UnityFigmaBridge.Editor
             await ImportDocument(s_UnityFigmaBridgeSettings.FileId, figmaFile, pageNodeList);
             
             FigmaAssetGuidMapManager.SaveAllMap();
+            ImportSessionCache.CacheClear();
         }
 
         /// <summary>
@@ -371,6 +374,12 @@ namespace UnityFigmaBridge.Editor
             return null;
         }
 
+        /// <summary>
+        /// Figmaドキュメントのインポート
+        /// </summary>
+        /// <param name="fileId">FigmaファイルのID</param>
+        /// <param name="figmaFile">Figmaデータ</param>
+        /// <param name="downloadPageNodeList">ダウンロード対象のページノード一覧</param>
         private static async Task ImportDocument(string fileId, FigmaFile figmaFile, List<Node> downloadPageNodeList)
         {
             // Build a list of page IDs to download
@@ -449,6 +458,7 @@ namespace UnityFigmaBridge.Editor
             // Make sure that existing downloaded assets are in the correct format
             FigmaApiUtils.CheckExistingAssetProperties();
             
+            // 利用されているImageをピックして保持する
             // Track fills that are actually used. This is needed as FIGMA has a way of listing any bitmap used rather than active 
             var foundImageFills = FigmaDataUtils.GetAllImageFillIdsFromFile(figmaFile,downloadPageIdList);
             
