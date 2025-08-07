@@ -49,6 +49,21 @@ namespace UnityFigmaBridge.Editor.Nodes
                         break;
                     }
                     
+                    // FigmaImageである必要がなければ、Imageをアタッチ
+                    if (node.type != NodeType.ELLIPSE &&
+                        node.type != NodeType.STAR &&
+                        node.rectangleCornerRadii == null &&
+                        node.cornerRadius == 0 &&
+                        node.strokes.Length == 0 &&
+                        (node.fills.Length > 0 && node.fills[0].type == Paint.PaintType.IMAGE))
+                    {
+                        var image = UnityUiUtils.GetOrAddComponent<Image>(nodeGameObject);
+                        var firstFill = node.fills[0];
+                        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(FigmaPaths.GetPathForImageFill(firstFill.imageRef, ImportSessionCache.imageNameMap[firstFill.imageRef]));
+                        image.sprite = sprite;
+                        return;
+                    }
+                    
                     // Create as needed (in case an override has specified new properties)
                     var figmaImage = nodeGameObject.GetComponent<FigmaImage>();
                     if (figmaImage == null) figmaImage = nodeGameObject.AddComponent<FigmaImage>();
@@ -116,7 +131,8 @@ namespace UnityFigmaBridge.Editor.Nodes
                     text.color = FigmaDataUtils.GetUnityFillColor(node.fills[0]);
                     text.fontSize = node.style.fontSize;
                     text.characterSpacing = -0.7f; // Figma handles spacing a little differently
-                   
+                    text.raycastTarget = false;// 文字には基本当たり判定不要なので、初期値をfalseに
+                    
                     text.horizontalAlignment = node.style.textAlignHorizontal switch
                     {
                         TypeStyle.TextAlignHorizontal.LEFT => HorizontalAlignmentOptions.Left,

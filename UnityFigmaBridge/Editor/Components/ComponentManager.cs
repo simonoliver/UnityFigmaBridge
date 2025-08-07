@@ -358,13 +358,32 @@ namespace UnityFigmaBridge.Editor.Components
                         {
                             break;
                         }
-                        
-                        var swapDefaultNode = figmaImportProcessData.NodeLookupDictionary[value.defaultValue];
+
+                        var nodeLookup = figmaImportProcessData.NodeLookupDictionary;
+                        var markTargetName = "";
+
+                        if (nodeLookup.TryGetValue(value.defaultValue, out var swapDefaultNode))
+                        {
+                            markTargetName = swapDefaultNode.name;
+                        }
+                        // 読み込み対象にデフォルトノードが存在していない場合は、マーカーを参照して置き換え対象を取得する
+                        else
+                        {
+                            var componentMarkers = obj.GetComponentsInChildren<FigmaComponentNodeMarker>(true);
+                            foreach (var componentMarker in componentMarkers)
+                            {
+                                if (componentMarker.ComponentId == value.defaultValue)
+                                {
+                                    markTargetName = componentMarker.name;
+                                    break;
+                                }
+                            }
+                        }
                         var replacementNode = figmaImportProcessData.NodeLookupDictionary[property.value];
 
                         var marker = obj.AddComponent<InstanceSwapMarker>();
                         var swapComponentPrefab = figmaImportProcessData.ComponentData.GetComponentPrefab(replacementNode.id);
-                        marker.targetName = swapDefaultNode.name;
+                        marker.targetName = markTargetName;
                         marker.replacementPrefab = swapComponentPrefab;
 
                         break;
