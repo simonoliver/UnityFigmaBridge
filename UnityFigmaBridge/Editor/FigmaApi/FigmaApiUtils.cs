@@ -329,6 +329,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                     // Set the properties for the texture, to mark as a sprite and with alpha transparency and no compression
                     TextureImporter textureImporter = (TextureImporter) AssetImporter.GetAtPath(downloadItem.FilePath);
                     textureImporter.textureType = TextureImporterType.Sprite;
+                    textureImporter.spriteImportMode = SpriteImportMode.Single;
                     textureImporter.alphaIsTransparency = true;
                     textureImporter.mipmapEnabled = true; // We'll enable mip maps to stop issues at lower resolutions
                     textureImporter.textureCompression = TextureImporterCompression.Uncompressed;
