@@ -250,55 +250,57 @@ namespace UnityFigmaBridge.Editor.Nodes
         {
             if (node.fills.Length > 0)
             {
-                var firstFill = node.fills[0];
-                switch (firstFill.type)
+                foreach (var fill in node.fills)
                 {
-                    case Paint.PaintType.IMAGE:
-                        SetupImageFill(figmaImage, firstFill);
-                        break;
-                    case Paint.PaintType.GRADIENT_LINEAR:
-                    case Paint.PaintType.GRADIENT_RADIAL:
-                        figmaImage.FillGradient = FigmaDataUtils.ToUnityGradient(firstFill);
-                        figmaImage.Fill = firstFill.type == Paint.PaintType.GRADIENT_RADIAL
-                            ? FigmaImage.FillStyle.RadialGradient
-                            : FigmaImage.FillStyle.LinearGradient;
+                    switch (fill.type)
+                    {
+                        case Paint.PaintType.IMAGE:
+                            SetupImageFill(figmaImage, fill);
+                            break;
+                        case Paint.PaintType.GRADIENT_LINEAR:
+                        case Paint.PaintType.GRADIENT_RADIAL:
+                            figmaImage.FillGradient = FigmaDataUtils.ToUnityGradient(fill);
+                            figmaImage.Fill = fill.type == Paint.PaintType.GRADIENT_RADIAL
+                                ? FigmaImage.FillStyle.RadialGradient
+                                : FigmaImage.FillStyle.LinearGradient;
 
-                        var gradientHandlePositions = firstFill.gradientHandlePositions;
-                        if (gradientHandlePositions.Length == 3)
-                        {
-                            figmaImage.GradientHandlePositions = new[]
+                            var gradientHandlePositions = fill.gradientHandlePositions;
+                            if (gradientHandlePositions.Length == 3)
                             {
-                                FigmaDataUtils.ToUnityVector(gradientHandlePositions[0]),
-                                FigmaDataUtils.ToUnityVector(gradientHandlePositions[1]),
-                                FigmaDataUtils.ToUnityVector(gradientHandlePositions[2])
-                            };
-                        }
+                                figmaImage.GradientHandlePositions = new[]
+                                {
+                                    FigmaDataUtils.ToUnityVector(gradientHandlePositions[0]),
+                                    FigmaDataUtils.ToUnityVector(gradientHandlePositions[1]),
+                                    FigmaDataUtils.ToUnityVector(gradientHandlePositions[2])
+                                };
+                            }
 
-                        break;
-                    case Paint.PaintType.SOLID:
-                        // Default, fill colour set below
-                        break;
-                    case Paint.PaintType.GRADIENT_ANGULAR:
-                        // Unsupported
-                        break;
-                    case Paint.PaintType.GRADIENT_DIAMOND:
-                        // Unsupported
-                        break;
-                    case Paint.PaintType.EMOJI:
-                        // Unsupported
-                        break;
+                            break;
+                        case Paint.PaintType.SOLID:
+                            // Default, fill colour set below
+                            break;
+                        case Paint.PaintType.GRADIENT_ANGULAR:
+                            // Unsupported
+                            break;
+                        case Paint.PaintType.GRADIENT_DIAMOND:
+                            // Unsupported
+                            break;
+                        case Paint.PaintType.EMOJI:
+                            // Unsupported
+                            break;
+                    }
+
+                    // for invisible fills, disable
+                    if (!fill.visible) figmaImage.enabled = false;
+
+                    // We don't use the base "color" attribute - this is reserved for transparency groups etc
+                    // So as not to apply to both stroke and fill
+                    figmaImage.FillColor = FigmaDataUtils.GetUnityFillColor(fill);
                 }
-
-                // for invisible fills, disable
-                if (!firstFill.visible) figmaImage.enabled = false;
-
-                // We don't use the base "color" attribute - this is reserved for transparency groups etc
-                // So as not to apply to both stroke and fill
-                figmaImage.FillColor = FigmaDataUtils.GetUnityFillColor(firstFill);
             }
             else
                 figmaImage.FillColor =
-                            new Color(0, 0, 0, 0); // Transparent fill - TODO find neater solution
+                            new Color(0, 0, 0, 0); // Transparent fill - TODO find neater solution 
         }
 
 

@@ -83,6 +83,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                 case Node.LayoutMode.VERTICAL:
                     layoutGroup= UnityUiUtils.GetOrAddComponent<VerticalLayoutGroup>(targetLayoutObject);
                     layoutGroup.childForceExpandWidth= layoutGroup.childForceExpandHeight = false;
+
                     // Setup alignment according to Figma layout. Primary is Vertical
                     switch (node.primaryAxisAlignItems)
                     {
@@ -115,6 +116,9 @@ namespace UnityFigmaBridge.Editor.Nodes
                                 Node.CounterAxisAlignItems.MAX => TextAnchor.LowerRight,
                                 _ => layoutGroup.childAlignment
                             };
+                            break;
+                        case Node.PrimaryAxisAlignItems.SPACE_BETWEEN:
+                            layoutGroup.childAlignment = TextAnchor.UpperLeft;
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -151,6 +155,7 @@ namespace UnityFigmaBridge.Editor.Nodes
                             Node.CounterAxisAlignItems.MAX => TextAnchor.LowerRight,
                             _ => layoutGroup.childAlignment
                         },
+                        Node.PrimaryAxisAlignItems.SPACE_BETWEEN => TextAnchor.UpperLeft,
                         _ => throw new ArgumentOutOfRangeException()
                     };
                     break;

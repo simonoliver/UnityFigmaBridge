@@ -24,20 +24,20 @@ namespace UnityFigmaBridge.Editor.Nodes
             if (figmaNode.relativeTransform != null)
             {
                 // Apply the "relativeTransform" from Figma Node for translation and rotation
-                targetRectTransform.anchoredPosition = new Vector2(figmaNode.relativeTransform[0, 2],
-                    -figmaNode.relativeTransform[1, 2]);
+                targetRectTransform.anchoredPosition = new Vector2(figmaNode.relativeTransform[0][2],
+                    -figmaNode.relativeTransform[1][2]);
                 var rotation = Mathf.Rad2Deg *
-                               Mathf.Atan2(-figmaNode.relativeTransform[1, 0], figmaNode.relativeTransform[0, 0]);
+                               Mathf.Atan2(-figmaNode.relativeTransform[1][0], figmaNode.relativeTransform[0][0]);
                 targetRectTransform.localRotation = Quaternion.Euler(0, 0, rotation);
             }
 
-            if (figmaNode.relativeTransform[0,0] < 0)
+            if (figmaNode.relativeTransform[0][0] < 0)
             {
                 //horizontal mirror
                 targetRectTransform.localScale = new Vector3(-targetRectTransform.localScale.x, targetRectTransform.localScale.y, targetRectTransform.localScale.z);
                 targetRectTransform.localRotation = Quaternion.Euler(targetRectTransform.transform.rotation.eulerAngles.x, targetRectTransform.transform.rotation.eulerAngles.y, targetRectTransform.transform.rotation.eulerAngles.z - 180);
             }
-            if (figmaNode.relativeTransform[1,1] < 0)
+            if (figmaNode.relativeTransform[1][1] < 0)
             {
                 //vertical mirror
                 targetRectTransform.localScale = new Vector3(targetRectTransform.localScale.x, -targetRectTransform.localScale.y, targetRectTransform.localScale.z);
