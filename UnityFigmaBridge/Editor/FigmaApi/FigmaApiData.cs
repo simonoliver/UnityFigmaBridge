@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace UnityFigmaBridge.Editor.FigmaApi
 {
@@ -74,7 +75,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public string lastModified;
         public string thumbnailUrl;
         public string version;
-        public string owner;
+        public string role;
     }
 
     /// <summary>
@@ -263,7 +264,8 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// <summary>
         /// The top two rows of a matrix that represents the 2D transform of this node relative to its parent. The bottom row of the matrix is implicitly always (0, 0, 1). Use to transform coordinates in geometry. Only present if geometry=paths is passed
         /// </summary>
-        public float[,] relativeTransform;
+        [JsonConverter(typeof(CustomJsonConverter))]
+        public List<List<float>> relativeTransform;
         // TO DO - Implement
 
         /// <summary>
@@ -444,7 +446,49 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         public ArcData arcData;
         
     }
-    
+
+    public class CustomJsonConverter : JsonConverter<List<List<float>>>
+    {
+        public override void WriteJson(JsonWriter writer, List<List<float>> value, JsonSerializer serializer)
+        {
+            writer.WriteStartArray();
+            foreach (var innerList in value)
+            {
+                writer.WriteStartArray();
+                foreach (var item in innerList)
+                {
+                    writer.WriteValue(item);
+                }
+                writer.WriteEndArray();
+            }
+            writer.WriteEndArray();
+        }
+
+        public override List<List<float>> ReadJson(JsonReader reader, Type objectType, List<List<float>> existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            List<List<float>> result = new List<List<float>>();
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonToken.EndArray)
+                    break;
+
+                List<float> innerList = new List<float>();
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonToken.EndArray)
+                        break;
+
+                    if (reader.Value == null)
+                        continue;
+
+                    innerList.Add(float.Parse(reader.Value.ToString()));
+                }
+                result.Add(innerList);
+            }
+            return result;
+        }
+    }
+
     public class Color
     {
         public float r;
