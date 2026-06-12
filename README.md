@@ -2,255 +2,166 @@
 
 ![Unity Figma Bridge](/Docs/UnityFigmaBridgeBanner.png)
 
-**[WebGL Demo Here](https://simonoliver.itch.io/unity-figma-bridge)** - created with a 1-Click Import
-from [this Figma Community file](https://www.figma.com/community/file/1230440663355118588/Figma-Unity-Bridge-Example) or [view live Figma document here](https://www.figma.com/file/DIhmjD8NcAF2UHf69y53fn/Figma-Unity-Bridge-Example?node-id=3%3A1288&t=FojAQsm2ZbnOJL9r-1).
+> Fork maintained by [Bilal Arıkan](https://github.com/bilal-arikan), based on the original
+> [UnityFigmaBridge by Simon Oliver](https://github.com/simonoliver/UnityFigmaBridge).
+> Adds offline caching, placeholder images, smarter binding, configurable asset folders and a Prefab Health Check
+> ([PR #60](https://github.com/simonoliver/UnityFigmaBridge/pull/60)).
 
-**[Example Unity Project Here](https://github.com/simonoliver/UnityFigmaBridgeExample)** - showing what gets generated
-by the tool
+Easily bring your Figma documents, components, assets and prototypes to Unity as native Unity UI — great for game jams
+and quick prototyping. Tested on **Unity 2021.3+**.
 
-Easily bring your Figma Documents, Components, Assets and Prototypes to Unity! This package makes it super simple to
-connect a Figma document to your Unity project and import all of your assets as native Unity UI.
+**Links:** [WebGL Demo](https://simonoliver.itch.io/unity-figma-bridge) ·
+[Figma Community file](https://www.figma.com/community/file/1230440663355118588/Figma-Unity-Bridge-Example) ·
+[Example Unity Project](https://github.com/simonoliver/UnityFigmaBridgeExample)
 
-It's great for game jamming, quick prototyping and easily bringing your Figma designs into Unity. Tested on Unity
-2021.3.X (other versions untested as yet)
+## Example
 
-**Warning** This is a very early release, so there's a lot that is missing, and probably a lot of bugs - feel free to
-send over any PRs or drop me a message on 🐤[Twitter](https://twitter.com/simonoliveruk) or
-🐘[Mastodon](https://mastodon.gamedev.place/@simonoliver).
+A Figma document imported into Unity as native UI with a single sync:
 
-Please note - currently only supports **Unity 2021.3** and later!
+| Figma source | Unity result |
+|--------------|--------------|
+| ![Figma source](/Docs/ExampleFigmaSource.png) | ![Unity result](/Docs/ExampleUnityResult.png) |
 
 ## Features
 
-* Supports recreation of core Figma elements as native Unity objects
-* Recreate Figma prototype flows to easily build Unity prototypes, including Sections
-* SDF renderer for core Figma shapes (Ellipse, Rectangle, Star)
-* Recreates Figma components as prefabs and links accordingly (including nested components)
-* Responsive layout and support for device safe areas
-* Automatically generates required font assets (including downloading missing fonts from Google Fonts)
-* Binds Unity MonoBehaviours and fields to Figma objects
-* Server side rendering of vector shapes
-* Auto layout support (Experimental - may cause issues on complex layouts)
-* Scrolling frames (using overflow scrolling settings)
+* Recreates core Figma elements as native Unity objects
+* Recreates prototype flows (including Sections) and components as linked prefabs
+* SDF renderer for core shapes, server-side rendering of vectors
+* Responsive layout, safe areas and (experimental) auto layout
+* Auto-generated font assets (downloads missing fonts from Google Fonts)
+* Binds MonoBehaviours, fields and button presses to Figma objects
+
+**Added in this fork:** offline support & caching · placeholder images · smart field binding · rule-based component
+binding · screen enhancement · configurable asset folder · Prefab Health Check.
 
 ## Setting up
 
 ![Add Package](/Docs/AddPackage.png)
 
-* Open the Package Manager window (Window → Package Manager) and and then select the Add Package icon in the top left of
-  the window to add a git package.
-* Enter ```https://github.com/simonoliver/UnityFigmaBridge.git```
-* Open Project Settings (Edit → Project Settings) and click "Create" to create a new settings asset
-* Paste in the URL of your Figma Document (eg ```https://www.figma.com/file/..../...```)
-* Get a [Figma Personal Access Token from your user profile page](https://www.figma.com/developers/api#authentication),
-  under Settings → Account → Personal Access Tokens
-* If you don't already have TextMeshPro in your project, import TMP Essentials (Use Window → Text Mesh Pro → Import TMP
-  Essential Resources)
+1. Package Manager → **Add package from git URL** → `https://github.com/bilal-arikan/UnityFigmaBridge.git`
+2. Project Settings → **Figma Bridge** → **Create** a settings asset
+3. Paste your Figma document URL (`https://www.figma.com/file/.../...`)
+4. Add your [Figma Personal Access Token](https://www.figma.com/developers/api#authentication) (Settings → Account)
+5. If needed, import TMP Essentials (Window → Text Mesh Pro → Import TMP Essential Resources)
+
+## Syncing
+
+Use the **Figma Bridge** menu:
+
+| Menu item | Action |
+|-----------|--------|
+| **Sync ALL** | Full sync — document + all assets (recommended first run) |
+| **Reprocess Cached Document** | Regenerate from local cache, fully offline |
+| **Sync Document (No Image)** | Document structure only, no images |
+| **Download Server Rendered Images** | Re-download vector renders (rate-limited) |
+| **Download Image Fills** | Re-download image fills (rate-limited) |
+| **Prefab Health Check** | Scan project for variant / reference issues |
+
+You'll be asked to confirm your access token and whether to use the current scene for prototype flow.
+
+## Offline support & placeholders
+
+* **Offline workflow** — once synced, **Reprocess Cached Document** regenerates everything from the local cache with no
+  network access.
+* **Placeholder images** — failed downloads produce a 2×2 gray placeholder so the UI never breaks; re-run a download
+  menu item to replace placeholders with real images. Handy against Figma's 429 rate limits.
 
 ## Prototyping
 
 ![Figma Prototype Setup](/Docs/FigmaPrototype.png)
 
-By default, the importer will recreate the prototype flow found in the Figma File (as defined in the prototype tab). You
-can disable this by turning off "Build Prototype Flow" which will just generate Figma assets.
+The importer recreates the prototype flow from the Figma file. Disable **Build Prototype Flow** to only generate assets.
+[Figma Sections](https://help.figma.com/hc/en-us/articles/9771500257687-Organize-your-canvas-with-sections) are
+supported, and active screens per section are remembered during play.
 
-It also supports Figma sections, implementing [Figma's Sections behaviour here](https://help.figma.com/hc/en-us/articles/9771500257687-Organize-your-canvas-with-sections). 
-Active screens in each section will be remembered during prototype play.
+## Selecting pages
 
-If *Build Prototype Flow* is selected, it will create required assets (Canvas, ProtoTypeController, EventSystem) and
-instantiate the default screen in the active scene. Hit play to start the prototype flow and buttons will transition to
-the specified screen as per the Figma document. Currently there is a dew
+![Select Page](/Docs/SelectPage.png)
 
-## Syncing your Figma Document
+Enable **Select Pages to import** to pick which pages get imported. Unselected pages still generate components (in case
+they're reused), but skip screens, image fills and server renders.
 
-Click on the appropriate menu item under **Figma Bridge** to sync your document:
+## How Figma maps to Unity
 
-* **Figma Bridge → Sync ALL** - Complete sync including document download and all assets (recommended for initial setup)
-* **Figma Bridge → Sync Document (No Image)** - Downloads only the document structure without downloading image assets
-* **Figma Bridge → Reprocess Downloaded Document** - Reprocess the currently cached Figma document without re-downloading
-* **Figma Bridge → Download Server Rendered Images** - Separately download complex vector shapes (useful for updating only rendered assets)
-* **Figma Bridge → Download Image Fills** - Separately download image fills (useful for updating only image assets)
+| Node type | Unity mapping |
+|-----------|---------------|
+| **Frames** (page root) | A "screen" prefab in *Screens* |
+| **Image fills** | PNG sprites in *ImageFills* |
+| **Components** | Prefabs in *Components* (instances apply overrides) |
+| **Pages** | Full-page prefabs in *Pages* |
+| **Vectors** | Server-rendered PNGs |
 
-You will need to:
-* Enter or confirm your Personal Access Token (this will be stored in your Player Prefs for future use)
-* Choose whether you want to use the current scene to generate prototype flow when prompted
-
-## Selecting Figma Pages
-
-![SelectPage.png](Docs/SelectPage.png)
-
-If you only want to import specific pages from the Figma document (for example if you use a page for design notes or
-brainstorming), you can tick "Select Pages to import" in the settings file. It will then download the document
-and show you a list of pages to choose from. This can help speed up import time and reduce the number of
-assets imported. Any page that is not selected will have the following rules:
-
-* Components will still be generated (in case they are used on other pages)
-* Screens will not be generated
-* Image Fills will not be downloaded (unless within a component)
-* Server side images will not be rendered (unless within a component)
-
-## How Figma objects map to Unity
-
-| Node Type               | Unity Mapping                                                                                                          |
-|-------------------------|------------------------------------------------------------------------------------------------------------------------|
-| **Frames**              | Any frame placed on the root of a page is considered a "screen" and turned into prefab, stored in the *Screens* Folder |
-| **Image fills**         | These are downloaded as PNGs and imported as sprites and stored in the *ImageFills* folder with the name of Figma ID   |
-| **Components**          | Theses are created as prefabs, and stored in the *Components* Folder                                                   |
-| **Component Instances** | The matching component prefab is instantiated, and any modified properties are applied                                 |
-| **Pages**               | Prefabs of each complete page are stored in the *Pages* folder                                                         |
-| **Vectors**             | Rendered on the server as a PNG (see *Server Rendering* nelow)                                                         |
-
-* **Placeholder Images** - When image downloads fail (due to network issues, rate limiting, etc.), placeholder images (2x2 gray PNG) are automatically created
-* **Failed Downloads Can Be Retried** - Use the "Download Server Rendered Images" or "Download Image Fills" menu items to re-attempt downloads - placeholders are automatically replaced with actual images
-* **No Broken References** - Placeholder images ensure your UI continues to render even if some images fail to download
-
-This is particularly useful when dealing with the Figma API's rate limiting (429 errors) on documents with many server-rendered shapes.
-
-## Fonts
-
-With the goal of trying to make it 1-click sync, if the font doesnt exist in your project it will try and download a
-matching TTF font from Google Fonts (
-from [Jonathan Neal's google-fonts-complete project](https://github.com/jonathantneal/google-fonts-complete)) and
-generate a new TextMesh Pro Font to match.
-
-There are fallbacks to matching fonts if this can't be done
-
-* Do you already have a matching downloaded Google Font in your project?
-* If not, is it available to download on Google Fonts (and do you have this enabled)?
-* If not, try and find the best match in your project (tries to find matching fonts by name, then best weight match)
-
-To apply shadow and stroke settings, the importer will generate material presets as required.
-
-As a result of the way that TextMeshPro handles outlines, the package will apply a custom shader (Fima/TextMeshPro)
-which uses "outside" positioning for strokes (the default in Figma), rather than "center" which TMPro usually uses (in
-future we'll support all three positions)
-
-## Color Space
-
-The package supports both Gamma and Linear rendering, but there are some things to bear in mind:
-* All used textures must have "sRGB" checked. The importer will automatically do this (as of 1.0.8) but if you are
-upgrading from a previous version, you'll need to reimport or do this manually.
-* TextMeshPro shaders currently do not render accurately in linear color space. We hope to address this in a future update
-
-## Exporting Assets
-
-* If an object is marked for export, then it will render it as an image, download it as a PNG and place it in the path
-  matching the object name. This can include file paths - for example you could name a node "Textures/Icon/GameIcon" and
-  it will write the PNG file to "Assets/Textures/Icon/GameIcon.png"
-
-## Server Rendering
-
-When the document is loaded, it will look for nodes that should be rendered on the server. Rendering is done at a scale
-set in the settings file (*Server Render Image Scale*, defaults to 3). Currently these are when any of the following are
-true:
-
-* An object is a vector shape
-* Object is a frame only containing vector shape children nodes
-* An object's name contains "render"
-
-If you are seeing a lot of server rendering, check your Figma doc to see how you might be able to optimise (for example
-making sure all vectors are in a component so only rendered once)
-
-## Responsive layout
-
-Screens will behave according to constraints setup in the constraints panel, with the exception of "Scale" constraint.
-You can use the *SafeArea* component to automatically adjust the safe area for devices that use them (eg iPhone), as
-mentioned in *Binding Behaviours*
-
-## Auto layout
-
-Vertical or Horizontal layout groups will be added to mirror the auto layout settings of a given object in the Figma document.
-Please note this is disabled by default (enable in settings) as it can cause issues with complex layouts.
+The asset root defaults to `Assets/Figma` and can be changed via the **Figma Assets Root Folder**
+(`FigmaAssetsRootFolder`) setting; all sub-folders are created relative to it.
 
 ## Binding behaviours
 
-As syncing with Figma replaces existing components and screens, the package makes it easy to automatically add
-behaviours at sync time, to
-prevent you having to manually add them each time you sync.
-
-MonoBehaviours can be automatically bound to components and screens, and methods bound to button clicks. The importer
-uses reflection to do the following:
-
 ![Auto Binding](/Docs/AutoBinding.png)
 
-* If a MonoBehaviour exists that matches the name (case insensitive) of the object, it will be attached. Eg if I have a
-  frame called "PlayScreen" and a MonoBehaviour called "PlayScreen", then that MonoBehaviour will be added automatically
-  at sync time.
-* If the attached MonoBehaviour has any serializable fields (public of using SerializeField attribute), they importer
-  will try and find matching object names within a depth of 2 (currently hardcoded) and look for a matching component.
-  For example, I could add ```public TextMeshPro_UGUI Title``` and if there is a text object called *Title* then it will
-  be assigned to that field.
+At sync time the importer auto-attaches behaviours via reflection so you don't re-add them after each sync:
 
-### Advanced Field Binding
-The field binding system now supports multiple naming conventions, making it more flexible:
-* **Exact Case-Insensitive Match** - "MyButton" field matches "mybutton" object
-* **Normalized Name Matching** - "My_Play_Button" field matches "My Play Button" or "my-play-button" object (spaces, dashes, and underscores are ignored)
-* **Underscore-Prefixed Fields** - Fields like "m_ScoreLabel" will match objects named "ScoreLabel"
+* A MonoBehaviour whose name matches an object's name (case-insensitive) is attached automatically.
+* Serializable fields are matched to child objects by name (depth 2).
 
-This allows your Figma document to use natural naming (with spaces and dashes) that will be automatically matched to C# field names.
+**Advanced field binding** matches field names flexibly:
+* Case-insensitive exact match (`MyButton` → `mybutton`)
+* Normalized match ignoring spaces/dashes/underscores (`My_Play_Button` → `My Play Button`)
+* Underscore-prefixed fields (`m_ScoreLabel` → `ScoreLabel`)
 
 ![Button Press Binding](/Docs/ButtonPressBinding.png)
 
-* If you add the ```[[BindFigmaButtonPress("PlayButton")]]``` attribute to a method, then it will add an onClick
-  listener to a button with that name (searching within a depth of 2)
+* `[[BindFigmaButtonPress("PlayButton")]]` on a method adds an onClick listener to that button (depth 2).
+* Objects named with "Button" / "SafeArea" get the matching component automatically. Buttons use a child named
+  "selected" for the rollover state.
 
-Some special case components are automatically added:
+**Rule-based component binding** — enable **Add Special Behaviours** (`EnableAddSpecialBehaviours`) to attach components
+by node-name filter. Default rules: `Button`→`button`, `Image`→`image`, `TextMeshProUGUI`→`text`,
+`TMP_InputField`→`inputfield`, `Toggle`→`toggle`, `SafeArea`→`safearea`. Editable in the settings file.
 
-* If an object's name contains "Button" or has an activate prototype link then it will add a Button component
-* If an object's name is "SafeArea" then it will add a safe area component (useful for phones and other devices with non
-  rectangular screens)
+## Standalone screens
 
-If a Button is added, it will look for a child node called "selected". If this is found, it will use this for rollover
-state.
+Enable **Enhance Screens With UI Components** (`EnhanceScreensWithUIComponents`) to add Canvas, CanvasScaler and
+GraphicRaycaster to generated screens (sized to the Figma screen) so a screen prefab is usable on its own.
 
-## Transitions
+## Prefab Health Check
 
-The FigmaScreenController can have a TransitionEffect which implements transitions in and out animations. By default a
-template fade to black effect is created but can be replaced and assigned.
+**Figma Bridge → Prefab Health Check** scans for Figma variants, missing references and orphaned variants. Also
+available as a scripting API:
 
-## Dependencies
+```csharp
+var result   = PrefabHealthChecker.RunFullScan();
+var variants = PrefabHealthChecker.ScanFigmaVariants();
+var missing  = PrefabHealthChecker.ScanMissingReferences();
+var orphaned = PrefabHealthChecker.ScanOrphanedVariants();
+```
 
-These should be imported automatically when the package is added
+## Other notes
 
-* TextMeshPro 2.0.1
-* JSON.Net 2.01
-
-## Other things
-
-If you need to change your personal access token, use Figma Bridge → Set Personal Access Token
-
-## Credits
-
-Uses:
-* [Iniqo Quilez' 2D SDF Functions](https://iquilezles.org/articles/distfunctions2d/)
-* [krzy-s UnityWebRequestAwaiter](https://gist.github.com/krzys-h/9062552e33dd7bd7fe4a6c12db109a1a)
-* [Jonathan Neal's google-fonts-complete list](https://github.com/jonathantneal/google-fonts-complete)
-
-Big thanks for  making those available online!
+* **Fonts** — missing fonts are downloaded from Google Fonts and converted to TMP; falls back to the best name/weight
+  match in your project. A custom shader (`Fima/TextMeshPro`) is used for "outside" stroke positioning.
+* **Server rendering** — vector shapes, vector-only frames, or nodes whose name contains "render" are rendered server
+  side at *Server Render Image Scale* (default 3).
+* **Exporting** — nodes marked for export are written as PNGs to a path matching their name (e.g. `Textures/Icon/GameIcon`).
+* **Color space** — Gamma & Linear supported; textures must have sRGB checked (automatic since 1.0.8).
+* **Dependencies** — TextMeshPro 2.0.1, JSON.Net 2.01 (imported automatically).
+* Change the access token via **Figma Bridge → Set Personal Access Token**.
 
 ## Currently unsupported
 
-* User defined locations for saving assets
-* Image tweaks (Exposure, Contrast)
-* Blur on shadows
-* Ellipse sweep angles and fill ratio
-* Most effects (Inner shadow, Layer Blur, Background Blue)
-* Multiple fills on a single object
-* Stroke styles other than flat colour
-* Stroke positions for shapes (outside/center)
-* Stroke positions for text (inside/center)
-* Dynamic creation of device fonts
-* Video Fills
-* Star shapes only support five points and non-default radius (missing data from API)
-* Star shape only renders at uniform scale
-* Polygon Shapes
-* Boolean operations
-* Line/Arrow
-* Consistent UUIDs
-* Support for "Scale" constraint
+Image tweaks (exposure/contrast), shadow blur, ellipse sweep, most effects, multiple fills, advanced stroke
+styles/positions, device fonts, video fills, complex star/polygon shapes, boolean ops, line/arrow, consistent UUIDs,
+"Scale" constraint.
 
-## Feedback, bugs and contributions
+## Credits
 
-Contributions are very welcome! There's a lot that is missing, and probably a lot of bugs - feel free to send over any
-PRs or drop me a message on 🐤[Twitter](https://twitter.com/simonoliveruk) or
+Original project by [Simon Oliver](https://github.com/simonoliver); fork maintained by
+[Bilal Arıkan](https://github.com/bilal-arikan). Uses
+[Iñigo Quílez' 2D SDF functions](https://iquilezles.org/articles/distfunctions2d/),
+[krzys-h's UnityWebRequestAwaiter](https://gist.github.com/krzys-h/9062552e33dd7bd7fe4a6c12db109a1a) and
+[Jonathan Neal's google-fonts-complete](https://github.com/jonathantneal/google-fonts-complete).
+
+## Contributing
+
+PRs and issues welcome on the [fork repository](https://github.com/bilal-arikan/UnityFigmaBridge). For the original
+project, reach Simon Oliver on 🐤[Twitter](https://twitter.com/simonoliveruk) or
 🐘[Mastodon](https://mastodon.gamedev.place/@simonoliver).
