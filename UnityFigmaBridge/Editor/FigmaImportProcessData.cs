@@ -76,6 +76,16 @@ namespace UnityFigmaBridge.Editor
         /// Allow faster lookup of nodes by ID
         /// </summary>
         public Dictionary<string,Node> NodeLookupDictionary = new();
+        
+        /// <summary>
+        /// Old screen prefab paths before import (for cleanup comparison)
+        /// </summary>
+        public List<string> OldScreenPrefabPaths = new();
+        
+        /// <summary>
+        /// Old page prefab paths before import (for cleanup comparison)
+        /// </summary>
+        public List<string> OldPagePrefabPaths = new();
     }
 
     /// <summary>

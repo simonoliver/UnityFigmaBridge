@@ -40,6 +40,28 @@ namespace UnityFigmaBridge.Editor.Settings
         [Tooltip("If true, download only selected pages and screens")]
         public bool OnlyImportSelectedPages = false;
 
+        [Space(10)]
+        [Tooltip("Automatically add Canvas, CanvasScaler, and GraphicRaycaster components to generated screens (useful for standalone prefabs)")]
+        public bool EnhanceScreensWithUIComponents = false;
+
+        [Space(10)]
+        [Tooltip("Automatically bind components to nodes based on name filters (e.g., add Button component if node name contains 'button')")]
+        public bool EnableAddSpecialBehaviours = false;
+
+        [Tooltip("Auto-bind components to nodes based on name filters (e.g., add Button component if node name contains 'button')")]
+        public List<ComponentBindingRule> SpecialBehaviourBindings = new(){
+            new ComponentBindingRule("UnityEngine.UI.Button", "button"),
+            new ComponentBindingRule("UnityEngine.UI.Image", "image"),
+            new ComponentBindingRule("TMPro.TextMeshProUGUI", "text"),
+            new ComponentBindingRule("TMPro.TMP_InputField", "inputfield"),
+            new ComponentBindingRule("UnityEngine.UI.Toggle", "toggle"),
+            new ComponentBindingRule("UnityFigmaBridge.Runtime.UI.SafeArea", "safearea"),
+        };
+
+        [Space(10)]
+        [Tooltip("Root folder path for generated Figma assets (default: Assets/Figma)")]
+        public string FigmaAssetsRootFolder = "Assets/Figma";
+
         [HideInInspector]
         public List<FigmaPageData> PageDataList = new ();
 
@@ -95,5 +117,22 @@ namespace UnityFigmaBridge.Editor.Settings
             Selected = true; // default is true
         }
     }
-    
+
+    [Serializable]
+    public class ComponentBindingRule
+    {
+        [Tooltip("Full qualified component type name (e.g., 'UnityEngine.UI.Button', 'UnityEngine.UI.Image')")]
+        public string ComponentTypeName;
+
+        [Tooltip("Node name filter - component will be added if this string is found in the node name (case-insensitive, e.g., 'button', '-toggle')")]
+        public string NodeNameFilter;
+
+        public ComponentBindingRule() { }
+
+        public ComponentBindingRule(string componentTypeName, string nodeNameFilter)
+        {
+            ComponentTypeName = componentTypeName;
+            NodeNameFilter = nodeNameFilter;
+        }
+    }
 }

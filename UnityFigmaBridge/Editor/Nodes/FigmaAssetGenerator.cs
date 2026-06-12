@@ -21,10 +21,19 @@ namespace UnityFigmaBridge.Editor.Nodes
         /// <summary>
         /// Builds a native unity UI given input figma data
         /// </summary>
-        /// <param name="rootCanvas">Root canvas for generation</param>
         /// <param name="figmaImportProcessData"></param>
-        public static void BuildFigmaFile(Canvas rootCanvas, FigmaImportProcessData figmaImportProcessData)
+        public static GameObject BuildFigmaFile(FigmaImportProcessData figmaImportProcessData)
         {
+            var root = new GameObject("FigmaRoot");
+            var canvas = root.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.TexCoord1 | AdditionalCanvasShaderChannels.TexCoord2 | AdditionalCanvasShaderChannels.TexCoord3 | AdditionalCanvasShaderChannels.Normal | AdditionalCanvasShaderChannels.Tangent;
+            var canvasScaler = root.AddComponent<CanvasScaler>();
+            canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            canvasScaler.referenceResolution = new Vector2(1920, 1080);
+            var graphicRaycaster = root.AddComponent<GraphicRaycaster>();
+            graphicRaycaster.blockingObjects = GraphicRaycaster.BlockingObjects.TwoD;
+
             // Save prefab for each page
             var downloadPageIdList = figmaImportProcessData.SelectedPagesForImport.Select(p => p.id).ToList();
             
@@ -34,7 +43,7 @@ namespace UnityFigmaBridge.Editor.Nodes
             {
                 bool includedPageObject = downloadPageIdList.Contains(figmaCanvasNode.id);
                 EditorUtility.DisplayProgressBar(UnityFigmaBridgeImporter.PROGRESS_BOX_TITLE, $"Generating Page {figmaCanvasNode.name} ", 0);
-                var pageGameObject = BuildFigmaPage(figmaCanvasNode, rootCanvas.transform as RectTransform, figmaImportProcessData,includedPageObject);
+                var pageGameObject = BuildFigmaPage(figmaCanvasNode, root.transform as RectTransform, figmaImportProcessData,includedPageObject);
                 createdPages.Add((figmaCanvasNode,pageGameObject));
             }
             
@@ -59,6 +68,8 @@ namespace UnityFigmaBridge.Editor.Nodes
             
             // At the very end, we want to apply figmaNode behaviour where required
             BehaviourBindingManager.BindBehaviours(figmaImportProcessData);
+
+            return root;
         }
 
 
@@ -258,6 +269,13 @@ namespace UnityFigmaBridge.Editor.Nodes
             // We want prefab to be stored with a default position, so reset and restore
             var current = screenRectTransform.anchoredPosition;
             screenRectTransform.anchoredPosition = Vector2.zero;
+            
+            // Enhance screen with UI components if enabled
+            if (figmaImportProcessData.Settings.EnhanceScreensWithUIComponents)
+            {
+                BehaviourBindingManager.EnhanceScreenWithComponents(screenRectTransform.gameObject, node.size.x, node.size.y);
+            }
+            
             // Write prefab
             var screenPrefab = PrefabUtility.SaveAsPrefabAssetAndConnect(screenRectTransform.gameObject,
                     FigmaPaths.GetPathForScreenPrefab(node,screenNameCount), InteractionMode.UserAction);
@@ -267,6 +285,8 @@ namespace UnityFigmaBridge.Editor.Nodes
             // If we are building the prototype flow, add this to the current flowScreen controller
             if (figmaImportProcessData.Settings.BuildPrototypeFlow)
             {
+                figmaImportProcessData.PrototypeFlowController = InitPrototypeFlowControllerOnScene();
+                figmaImportProcessData.PrototypeFlowController.ClearFigmaScreens();
                 figmaImportProcessData.PrototypeFlowController.RegisterFigmaScreen(new FigmaFlowScreen
                 {
                     FigmaScreenPrefab = screenPrefab,
@@ -300,10 +320,6 @@ namespace UnityFigmaBridge.Editor.Nodes
             figmaImportProcessData.PagePrefabs.Add(pagePrefab);
         }
 
-
-
-
-
         /// <summary>
         /// Registers a figma section. This is needed for flow controller to properly transition between sections
         /// </summary>
@@ -336,6 +352,56 @@ namespace UnityFigmaBridge.Editor.Nodes
                 });
             }
         }
-    }
+    
+        /// <summary>
+        /// Initializes a prototype flow controller on the scene. This is required to build prototype flows, and will be added to any screen prefabs as part of generation. We have this as a separate method to ensure we can easily find and reference the controller from generated screens, without having to search through the scene for it.
+        /// </summary>
+        /// <returns> The initialized PrototypeFlowController </returns>
+        public static PrototypeFlowController InitPrototypeFlowControllerOnScene()
+        {
+            // First try to find existing PrototypeFlowController on the canvas
+            var s_PrototypeFlowController = Object.FindObjectOfType<PrototypeFlowController>();
+            // Only create if still not found
+            if (s_PrototypeFlowController == null)
+            {
+                // If doesnt exist create new one
+                var s_SceneCanvas = CreateCanvas(true);
+                s_PrototypeFlowController = s_SceneCanvas.gameObject.AddComponent<PrototypeFlowController>();
+            }
+            return s_PrototypeFlowController;
+        }
+        
+        /// <summary>
+        /// Creates a temporary canvas for generation if one doesn't already exist in the scene. This is required as we need a canvas to generate UI elements under, but we want to avoid creating multiple canvases if there are multiple screens being generated. We also want to avoid creating a canvas if we are generating a prototype flow and there is already a canvas with a PrototypeFlowController on it, as this will be used for generation instead.
+        /// </summary>
+        /// <param name="createEventSystem"></param>
+        /// <returns></returns>
+        private static Canvas CreateCanvas(bool createEventSystem)
+        {
+            // Canvas
+            var canvasGameObject = new GameObject("Canvas");
+            var canvas=canvasGameObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasGameObject.AddComponent<GraphicRaycaster>();
 
+            if (!createEventSystem) return canvas;
+
+            var existingEventSystem = Object.FindObjectOfType<UnityEngine.EventSystems.EventSystem>();
+            if (existingEventSystem == null)
+            {
+                // Create new event system
+                var eventSystemGameObject = new GameObject("EventSystem");
+                existingEventSystem=eventSystemGameObject.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            }
+
+            var pointerInputModule = Object.FindObjectOfType<UnityEngine.EventSystems.PointerInputModule>();
+            if (pointerInputModule == null)
+            {
+                // TODO - Allow for new input system?
+                existingEventSystem.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+
+            return canvas;
+        }
+    }
 }

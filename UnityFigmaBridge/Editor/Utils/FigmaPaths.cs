@@ -8,39 +8,45 @@ namespace UnityFigmaBridge.Editor.Utils
     public static class FigmaPaths
     {
         /// <summary>
-        ///  Root folder for assets
+        ///  Root folder for assets (can be overridden via settings)
         /// </summary>
-        public static string FigmaAssetsRootFolder = "Assets/Figma";
+        private static string s_FigmaAssetsRootFolder = "Assets/Figma";
+        
+        public static string FigmaAssetsRootFolder 
+        { 
+            get => s_FigmaAssetsRootFolder;
+            set => s_FigmaAssetsRootFolder = value;
+        }
         /// <summary>
-        /// Assert folder to store page prefabs)
+        /// Assert folder to store page prefabs
         /// </summary>
-        public static string FigmaPagePrefabFolder = $"{FigmaAssetsRootFolder}/Pages";
+        public static string FigmaPagePrefabFolder => $"{FigmaAssetsRootFolder}/Pages";
         /// <summary>
         /// Assert folder to store flowScreen prefabs (root level frames on pages)
         /// </summary>
-        public static string FigmaScreenPrefabFolder = $"{FigmaAssetsRootFolder}/Screens";
+        public static string FigmaScreenPrefabFolder => $"{FigmaAssetsRootFolder}/Screens";
         /// <summary>
         /// Assert folder to store compoment prefabs
         /// </summary>
-        public static string FigmaComponentPrefabFolder = $"{FigmaAssetsRootFolder}/Components";
+        public static string FigmaComponentPrefabFolder => $"{FigmaAssetsRootFolder}/Components";
         /// <summary>
         /// Asset folder to store image fills
         /// </summary>
-        public static string FigmaImageFillFolder = $"{FigmaAssetsRootFolder}/ImageFills";
+        public static string FigmaImageFillFolder => $"{FigmaAssetsRootFolder}/ImageFills";
         /// <summary>
         /// Asset folder to store server rendered images
         /// </summary>
-        public static string FigmaServerRenderedImagesFolder = $"{FigmaAssetsRootFolder}/ServerRenderedImages";
+        public static string FigmaServerRenderedImagesFolder => $"{FigmaAssetsRootFolder}/ServerRenderedImages";
         
         /// <summary>
         /// Asset folder to store Font material presets
         /// </summary>
-        public static string FigmaFontMaterialPresetsFolder = $"{FigmaAssetsRootFolder}/FontMaterialPresets";
+        public static string FigmaFontMaterialPresetsFolder => $"{FigmaAssetsRootFolder}/FontMaterialPresets";
         
         /// <summary>
         /// Asset folder to store Font assets (TTF and generated TMP fonts)
         /// </summary>
-        public static string FigmaFontsFolder = $"{FigmaAssetsRootFolder}/Fonts";
+        public static string FigmaFontsFolder => $"{FigmaAssetsRootFolder}/Fonts";
         
         
         public static string GetPathForImageFill(string imageId)
@@ -107,7 +113,7 @@ namespace UnityFigmaBridge.Editor.Utils
             return System.Text.RegularExpressions.Regex.Replace(name, invalidRegStr, "_");
         }
 
-        public static void CreateRequiredDirectories()
+        public static void CreateRequiredDirectories(FigmaImportProcessData importProcessData = null)
         {
             
             //  Create directory for pages if required 
@@ -115,11 +121,15 @@ namespace UnityFigmaBridge.Editor.Utils
             {
                 Directory.CreateDirectory(FigmaPagePrefabFolder);
             }
-
-            // Remove existing prefabs for pages
-            foreach (var file in new DirectoryInfo(FigmaPagePrefabFolder).GetFiles())
+            else if (importProcessData != null)
             {
-                file.Delete(); 
+                // Capture existing page prefab paths before they get replaced
+                var pageDir = new DirectoryInfo(FigmaPagePrefabFolder);
+                foreach (var file in pageDir.GetFiles())
+                {
+                    if (file.Extension == ".prefab")
+                        importProcessData.OldPagePrefabPaths.Add(file.FullName);
+                }
             }
             
             //  Create directory for flowScreen prefabs if required 
@@ -127,10 +137,15 @@ namespace UnityFigmaBridge.Editor.Utils
             {
                 Directory.CreateDirectory(FigmaScreenPrefabFolder);
             }
-            // Remove existing flowScreen prefabs
-            foreach (FileInfo file in  new DirectoryInfo(FigmaScreenPrefabFolder).GetFiles())
+            else if (importProcessData != null)
             {
-                file.Delete(); 
+                // Capture existing screen prefab paths before they get replaced
+                var screenDir = new DirectoryInfo(FigmaScreenPrefabFolder);
+                foreach (FileInfo file in screenDir.GetFiles())
+                {
+                    if (file.Extension == ".prefab")
+                        importProcessData.OldScreenPrefabPaths.Add(file.FullName);
+                }
             }
             
             if (!Directory.Exists(FigmaComponentPrefabFolder))
@@ -158,6 +173,65 @@ namespace UnityFigmaBridge.Editor.Utils
             if (!Directory.Exists(FigmaFontsFolder))
             {
                 Directory.CreateDirectory(FigmaFontsFolder);
+            }
+        }
+        
+        /// <summary>
+        /// Delete orphaned prefabs that were in the old list but not in the new list
+        /// </summary>
+        public static void CleanupOrphanedPrefabs(FigmaImportProcessData importProcessData)
+        {
+            if (importProcessData == null)
+                return;
+                
+            // Get all current screen prefab paths
+            var currentScreenPaths = new HashSet<string>();
+            foreach (var screenPrefab in importProcessData.ScreenPrefabs)
+            {
+                var path = UnityEditor.AssetDatabase.GetAssetPath(screenPrefab);
+                if (!string.IsNullOrEmpty(path))
+                    currentScreenPaths.Add(System.IO.Path.GetFullPath(path));
+            }
+            
+            // Get all current page prefab paths
+            var currentPagePaths = new HashSet<string>();
+            foreach (var pagePrefab in importProcessData.PagePrefabs)
+            {
+                var path = UnityEditor.AssetDatabase.GetAssetPath(pagePrefab);
+                if (!string.IsNullOrEmpty(path))
+                    currentPagePaths.Add(System.IO.Path.GetFullPath(path));
+            }
+            
+            // Delete screen prefabs that no longer exist in Figma
+            foreach (var oldPath in importProcessData.OldScreenPrefabPaths)
+            {
+                if (!currentScreenPaths.Contains(oldPath))
+                {
+                    if (System.IO.File.Exists(oldPath))
+                    {
+                        System.IO.File.Delete(oldPath);
+                        var metaPath = oldPath + ".meta";
+                        if (System.IO.File.Exists(metaPath))
+                            System.IO.File.Delete(metaPath);
+                        UnityEngine.Debug.Log($"Deleted orphaned screen prefab: {oldPath}");
+                    }
+                }
+            }
+            
+            // Delete page prefabs that no longer exist in Figma
+            foreach (var oldPath in importProcessData.OldPagePrefabPaths)
+            {
+                if (!currentPagePaths.Contains(oldPath))
+                {
+                    if (System.IO.File.Exists(oldPath))
+                    {
+                        System.IO.File.Delete(oldPath);
+                        var metaPath = oldPath + ".meta";
+                        if (System.IO.File.Exists(metaPath))
+                            System.IO.File.Delete(metaPath);
+                        UnityEngine.Debug.Log($"Deleted orphaned page prefab: {oldPath}");
+                    }
+                }
             }
         }
         

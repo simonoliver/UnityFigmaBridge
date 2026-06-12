@@ -130,6 +130,38 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         }
 
         /// <summary>
+        /// Load Figma document from cached file (previously downloaded)
+        /// </summary>
+        /// <returns>The cached FigmaFile or null if not found</returns>
+        public static FigmaFile LoadFigmaDocumentFromCache()
+        {
+            var cachePath = Path.Combine("Assets", WRITE_FILE_PATH);
+            
+            if (!File.Exists(cachePath))
+            {
+                return null;
+            }
+
+            try
+            {
+                var jsonContent = File.ReadAllText(cachePath);
+                JsonSerializerSettings settings = new JsonSerializerSettings()
+                {
+                    DefaultValueHandling = DefaultValueHandling.Include,
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    NullValueHandling = NullValueHandling.Ignore,
+                };
+                
+                var figmaFile = JsonConvert.DeserializeObject<FigmaFile>(jsonContent, settings);
+                Debug.Log($"Figma file loaded from cache: {figmaFile.name}");
+                return figmaFile;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error loading cached Figma document: {e}");
+                return null;
+            }
+        }
         /// Requests a server-side rendering of nodes from a document, returning list of urls to download
         /// </summary>
         /// <param name="fileId">Figma File Id</param>
@@ -245,24 +277,24 @@ namespace UnityFigmaBridge.Editor.FigmaApi
         /// Generates a standardised list of files to download 
         /// </summary>
         /// <param name="imageFillData"></param>
-        /// <param name="foundImageFills"></param>
         /// <param name="serverRenderData"></param>
         /// <param name="serverRenderNodes"></param>
         /// <returns></returns>
-        public static List<FigmaDownloadQueueItem> GenerateDownloadQueue(FigmaImageFillData imageFillData,List<string> foundImageFills,List<FigmaServerRenderData> serverRenderData,List<ServerRenderNodeData> serverRenderNodes)
+        public static List<FigmaDownloadQueueItem> GenerateDownloadQueue(FigmaImageFillData imageFillData, List<FigmaServerRenderData> serverRenderData,List<ServerRenderNodeData> serverRenderNodes)
         {
             // Check if each image fill file has already been downloaded. If not, add to download list
             //Dictionary<string, string> filteredImageFillList = new Dictionary<string, string>();
             List<FigmaDownloadQueueItem> downloadList = new List<FigmaDownloadQueueItem>();
-            foreach (var keyPair in imageFillData.meta.images)
+            foreach (var keyPair in imageFillData.meta?.images ?? new Dictionary<string, string>())
             {
+                var path = FigmaPaths.GetPathForImageFill(keyPair.Key);
                 // Only download if it is used in the document and not already downloaded
-                if (foundImageFills.Contains(keyPair.Key) && !File.Exists(FigmaPaths.GetPathForImageFill(keyPair.Key)))
+                if (!File.Exists(path) || IsPlaceholderImage(path))
                 {
                     downloadList.Add(new FigmaDownloadQueueItem
                     {
                         Url=keyPair.Value,
-                        FilePath = FigmaPaths.GetPathForImageFill(keyPair.Key),
+                        FilePath = path,
                         FileType = FigmaDownloadQueueItem.FigmaFileType.ImageFill
                     });
                 }
@@ -273,18 +305,19 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             {
                 foreach (var keyPair in serverRenderDataEntry.images)
                 {
+                    var path = FigmaPaths.GetPathForServerRenderedImage(keyPair.Key, serverRenderNodes);
                     if (string.IsNullOrEmpty(keyPair.Value))
                     {
                         // if the url is invalid...
                         Debug.Log($"Can't download image for Server Node {keyPair.Key}");
                     }
-                    else
+                    else if (!File.Exists(path) || IsPlaceholderImage(path))
                     {
                         // Always overwrite as may have changed
                         downloadList.Add(new FigmaDownloadQueueItem
                         {
                             Url = keyPair.Value,
-                            FilePath = FigmaPaths.GetPathForServerRenderedImage(keyPair.Key, serverRenderNodes),
+                            FilePath = path,
                             FileType = FigmaDownloadQueueItem.FigmaFileType.ServerRenderedImage
                         });
                     }
@@ -358,6 +391,7 @@ namespace UnityFigmaBridge.Editor.FigmaApi
                 }
                 downloadIndex++;
             }
+            AssetDatabase.Refresh();
         }
 
     
@@ -369,6 +403,133 @@ namespace UnityFigmaBridge.Editor.FigmaApi
             CheckImageFillTextureProperties();
         }
 
+        /// <summary>
+        /// Check if a file is a placeholder image (2x2 gray PNG)
+        /// </summary>
+        public static bool IsPlaceholderImage(string filePath)
+        {
+            try
+            {
+                if (!File.Exists(filePath))
+                    return false;
+                
+                // Placeholder images are very small (2x2 PNGs are typically < 1KB)
+                var fileInfo = new FileInfo(filePath);
+                if (fileInfo.Length > 10000) // Larger than 10KB = not a placeholder
+                    return false;
+                
+                // Try to load and check dimensions
+                var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                byte[] fileData = File.ReadAllBytes(filePath);
+                if (texture.LoadImage(fileData))
+                {
+                    bool isPlaceholder = texture.width == 2 && texture.height == 2;
+                    UnityEngine.Object.DestroyImmediate(texture);
+                    return isPlaceholder;
+                }
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+            catch
+            {
+                // If we can't determine, assume it's not a placeholder
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Create placeholder only if file doesn't exist
+        /// </summary>
+        public static bool CreatePlaceholderImageIfNotExists(string filePath)
+        {
+            if (File.Exists(filePath))
+                return false; // Don't overwrite existing file
+                
+            CreatePlaceholderImage(filePath);
+            return true;
+        }
+        
+        /// <summary>
+        /// Create a 2x2 placeholder PNG for failed downloads
+        /// </summary>
+        public static void CreatePlaceholderImage(string filePath)
+        {
+            try
+            {
+                // Create a 2x2 transparent PNG texture
+                var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                var pixels = new Color32[4];
+                
+                // Make it semi-transparent gray (placeholder color)
+                for (int i = 0; i < 4; i++)
+                {
+                    pixels[i] = new Color32(128, 128, 128, 128);
+                }
+                
+                texture.SetPixels32(pixels);
+                texture.Apply();
+                
+                // Encode to PNG and save
+                byte[] pngData = texture.EncodeToPNG();
+                
+                var directoryPath = Path.GetDirectoryName(filePath);
+                if (!Directory.Exists(directoryPath))
+                    Directory.CreateDirectory(directoryPath);
+                
+                File.WriteAllBytes(filePath, pngData);
+                
+                // Clean up texture
+                UnityEngine.Object.DestroyImmediate(texture);
+                
+                // Refresh the asset database to ensure the asset has been created
+                AssetDatabase.ImportAsset(filePath);
+                AssetDatabase.Refresh();
+                
+                // Set the properties for the texture, to mark as a sprite and with alpha transparency and no compression
+                TextureImporter textureImporter = (TextureImporter) AssetImporter.GetAtPath(filePath);
+                textureImporter.textureType = TextureImporterType.Sprite;
+                textureImporter.spriteImportMode = SpriteImportMode.Single;
+                textureImporter.alphaIsTransparency = true;
+                textureImporter.mipmapEnabled = true; // We'll enable mip maps to stop issues at lower resolutions
+                textureImporter.textureCompression = TextureImporterCompression.Uncompressed;
+                textureImporter.sRGBTexture = true;
+                textureImporter.wrapMode = TextureWrapMode.Clamp;
+                textureImporter.SaveAndReimport();
+
+                Debug.Log($"Created placeholder image at {filePath}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Failed to create placeholder image: {e.Message}");
+            }
+        }
+
+
+        /// <summary>
+        /// Create 2x2 placeholder PNG files for nodes that failed to download
+        /// </summary>
+        public static int CreatePlaceholderImagesForBatch(string folderPath, List<string> nodeIds)
+        {
+            int placeholderCount = 0;
+            foreach (var nodeId in nodeIds)
+            {
+                var placeholderPath = $"{folderPath}/{nodeId}.png";
+                try
+                {
+                    // Only create if doesn't exist - keep existing successful downloads
+                    if (CreatePlaceholderImageIfNotExists(placeholderPath))
+                    {
+                        placeholderCount++;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"Failed to create placeholder for {nodeId}: {e.Message}");
+                }
+            }
+            return placeholderCount;
+        }
+        
         /// <summary>
         /// Checks downloaded image fills
         /// </summary>
